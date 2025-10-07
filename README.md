@@ -12,14 +12,20 @@ Ogni esempio è contenuto in una propria cartella (es: `AWS-Esempio01-BucketS3`,
 
 
 **Prerequisiti**:
-- [Terraform](https://www.terraform.io/downloads.html) installato
-- Account cloud (AWS, Azure, ecc.)
-- Credenziali configurate (es. `aws configure` per AWS, variabili d'ambiente per Azure)
+- [Terraform](https://www.terraform.io/downloads.html) installato, consigliato anche Docker
+- Account cloud attivo e funzionante (AWS, Azure, ecc.), prestare sempre attenzione ai costi
+- Per ogni cloud attivo, è necessario avere le credenziali configurate
+   - Per AWS devono essere configurate le credenziali con `aws configure`
+   - Per Azure *coming soon*
 
 
 ## Esempi
-L'elenco degli esempi disponibili
-- **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili.
+L'elenco degli esempi disponibili:
+- **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili
+- **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*
+- **DOCKER-Esempio01-Nginx**: crea un container Docker *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, mappando la porta 8001 e montando una directory locale per i file web
+- **KUBERNETES-Esempio01-Nginx**: crea un deployment Kubernetes *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, usando ConfigMap per i file web, Service con NodePort e supporto per scaling automatico (richiede cluster Kubernetes locale come minikube o kind)
+- **AZURE**: *coming soon*
 
 
 ## Comandi principali
@@ -42,6 +48,7 @@ L'elenco degli esempi disponibili
 
 
 ## Risorse utili
+- [AlNao Debian HandBook](https://github.com/alnao/alnao/blob/main/DEBIAN.md) per una guida di installazione di Docker e Terraform in sistemi GNU Linux Debian
 - [Documentazione Terraform](https://www.terraform.io/docs)
 - [Provider AWS](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 - [Provider Azure](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)

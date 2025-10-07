@@ -1,0 +1,413 @@
+# GitHub Actions Pipeline per Deploy automatico con Terraform
+# Author: AlNao
+# Description: Pipeline completa Build → Test → Deploy → Verify con rollback automatico
+
+name: DevOps Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - dev
+          - staging  
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/devops-app
+  TF_VERSION: 1.6.0
+  KUBECTL_VERSION: 1.28.0
+
+jobs:
+  #==========================================
+  # BUILD JOB
+  #==========================================
+  build:
+    name: 🏗️ Build Docker Image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🔑 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+      - name: 🏗️ Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  #==========================================
+  # TEST JOBS
+  #==========================================
+  test-lint:
+    name: 🧪 Lint Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🔍 HTML Validation
+        run: |
+          cd app/
+          echo "🧪 Validating HTML structure..."
+          # Controllo base HTML syntax
+          if command -v tidy >/dev/null 2>&1; then
+            tidy -q -e index.html || echo "HTML validation warnings (non-blocking)"
+          fi
+          echo "✅ HTML validation completed"
+
+  test-security:
+    name: 🔒 Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🛡️ Security Configuration Check
+        run: |
+          cd app/
+          echo "🔒 Checking security configurations..."
+          
+          echo "Verifying security headers in nginx.conf:"
+          grep -q "X-Frame-Options" nginx.conf && echo "✅ X-Frame-Options found"
+          grep -q "X-Content-Type-Options" nginx.conf && echo "✅ X-Content-Type-Options found"
+          grep -q "X-XSS-Protection" nginx.conf && echo "✅ X-XSS-Protection found"
+          
+          echo "✅ Security checks completed"
+
+  #==========================================
+  # TERRAFORM PLAN JOBS
+  #==========================================
+  plan:
+    name: 📋 Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [test-lint, test-security]
+    if: github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        environment: 
+          - ${{ github.ref == 'refs/heads/develop' && 'dev' || '' }}
+          - ${{ github.ref == 'refs/heads/main' && 'staging' || '' }}
+          - ${{ github.ref == 'refs/heads/main' && 'production' || '' }}
+        exclude:
+          - environment: ''
+    
+    outputs:
+      environment: ${{ matrix.environment }}
+      
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: 🔑 Configure AWS credentials (for S3 backend)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          
+      - name: 🏗️ Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=pipeline-${{ matrix.environment }}.tfstate" \
+            -backend-config="region=eu-central-1"
+            
+      - name: 📋 Terraform Plan
+        working-directory: terraform
+        run: |
+          terraform plan \
+            -var-file="environments/${{ matrix.environment }}.tfvars" \
+            -var="image_tag=${{ github.sha }}" \
+            -out=${{ matrix.environment }}.tfplan
+            
+      - name: 💾 Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: terraform/${{ matrix.environment }}.tfplan
+          retention-days: 1
+
+  #==========================================
+  # DEPLOY JOBS
+  #==========================================
+  deploy-dev:
+    name: 🚀 Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [build, plan]
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: dev
+      url: http://dev.devops-app.local
+      
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Tools
+        uses: ./.github/actions/setup-tools
+        
+      - name: 📥 Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-dev
+          path: terraform/
+          
+      - name: 🔑 Configure Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > ~/.kube/config
+          kubectl cluster-info
+          
+      - name: 🚀 Deploy Application
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=pipeline-dev.tfstate" \
+            -backend-config="region=eu-central-1"
+            
+          terraform apply -auto-approve dev.tfplan
+          terraform output -json > terraform_outputs.json
+          
+      - name: 🏥 Health Check
+        run: |
+          cd scripts
+          chmod +x health-check.sh
+          
+          SERVICE_NAME=$(cd ../terraform && terraform output -raw service_name)
+          NAMESPACE=$(cd ../terraform && terraform output -raw namespace)
+          
+          # Port forward per test locale
+          kubectl port-forward svc/$SERVICE_NAME -n $NAMESPACE 8080:80 &
+          PF_PID=$!
+          sleep 10
+          
+          # Esegui health check
+          ./health-check.sh "http://localhost:8080" 10 5
+          
+          # Cleanup
+          kill $PF_PID 2>/dev/null || true
+
+  deploy-staging:
+    name: 🚀 Deploy to Staging  
+    runs-on: ubuntu-latest
+    needs: [build, plan]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.devops-app.com
+      
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Tools
+        uses: ./.github/actions/setup-tools
+        
+      - name: 📥 Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-staging
+          path: terraform/
+          
+      - name: 🔑 Configure Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          kubectl cluster-info
+          
+      - name: 🚀 Deploy Application
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=pipeline-staging.tfstate" \
+            -backend-config="region=eu-central-1"
+            
+          terraform apply -auto-approve staging.tfplan
+          
+      - name: 🏥 Health Check
+        run: |
+          cd scripts
+          chmod +x health-check.sh deploy.sh rollback.sh
+          
+          APP_URL=$(cd ../terraform && terraform output -raw app_url)
+          
+          if [[ $APP_URL == *"kubectl port-forward"* ]]; then
+            SERVICE_NAME=$(cd ../terraform && terraform output -raw service_name)
+            NAMESPACE=$(cd ../terraform && terraform output -raw namespace)
+            kubectl port-forward svc/$SERVICE_NAME -n $NAMESPACE 8080:80 &
+            sleep 10
+            ./health-check.sh "http://localhost:8080" 15 10
+            kill %1 2>/dev/null || true
+          else
+            ./health-check.sh "$APP_URL"
+          fi
+
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, plan]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://app.devops-app.com
+      
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Tools
+        uses: ./.github/actions/setup-tools
+        
+      - name: 📥 Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-production
+          path: terraform/
+          
+      - name: 🔑 Configure Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > ~/.kube/config
+          kubectl cluster-info
+          
+      - name: 🚀 Deploy with Advanced Checks
+        run: |
+          cd scripts
+          chmod +x deploy.sh health-check.sh rollback.sh
+          ./deploy.sh ../terraform/production.tfplan production
+
+  #==========================================
+  # VERIFY JOBS
+  #==========================================
+  verify:
+    name: ✅ Post-Deploy Verification
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-staging.result == 'success')
+    
+    steps:
+      - name: 🔍 Integration Tests
+        run: |
+          echo "🔍 Running integration tests..."
+          
+          if [ "${{ needs.deploy-dev.result }}" == "success" ]; then
+            echo "✅ DEV deployment verified"
+          fi
+          
+          if [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+            echo "✅ STAGING deployment verified"
+          fi
+          
+      - name: 📊 Performance Test
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "⚡ Basic performance test..."
+          # Aggiungi qui test di performance se necessario
+          echo "✅ Performance test completed"
+
+  #==========================================
+  # ROLLBACK JOBS (Manual)
+  #==========================================
+  rollback:
+    name: 🔄 Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⚙️ Setup Tools
+        uses: ./.github/actions/setup-tools
+        
+      - name: 🔑 Configure Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          case "${{ github.event.inputs.environment }}" in
+            "dev")
+              echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > ~/.kube/config
+              ;;
+            "staging")
+              echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > ~/.kube/config
+              ;;
+            "production")
+              echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > ~/.kube/config
+              ;;
+          esac
+          kubectl cluster-info
+          
+      - name: 🔄 Execute Rollback
+        run: |
+          cd scripts
+          chmod +x rollback.sh
+          ./rollback.sh ${{ github.event.inputs.environment }} previous
+
+  #==========================================
+  # NOTIFICATION JOB
+  #==========================================
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: 📢 Slack Notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#devops'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

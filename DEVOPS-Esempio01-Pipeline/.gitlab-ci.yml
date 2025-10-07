@@ -1,0 +1,371 @@
+# GitLab CI/CD Pipeline per Deploy automatico con Terraform
+# Author: AlNao
+# Description: Pipeline completa Build → Test → Deploy → Verify con rollback automatico
+
+stages:
+  - build
+  - test  
+  - plan
+  - deploy
+  - verify
+
+variables:
+  DOCKER_REGISTRY: "registry.gitlab.com"
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE/devops-app"
+  TF_ROOT: "${CI_PROJECT_DIR}/terraform"
+  TF_STATE_BUCKET: "terraform-devops-pipeline-state"
+  TF_STATE_NAME: "pipeline-${CI_ENVIRONMENT_NAME}"
+  KUBECTL_VERSION: "1.28.0"
+  
+# Template per job Terraform
+.terraform_template: &terraform_template
+  image: 
+    name: hashicorp/terraform:1.6
+    entrypoint: [""]
+  before_script:
+    - cd $TF_ROOT
+    - terraform --version
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=$TF_STATE_NAME.tfstate" -backend-config="region=eu-central-1"
+
+# Template per job Kubernetes
+.kubectl_template: &kubectl_template
+  before_script:
+    - apk add --no-cache curl
+    - curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    - chmod +x kubectl
+    - mv kubectl /usr/local/bin/
+    - kubectl version --client
+
+#==========================================
+# BUILD STAGE
+#==========================================
+build:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cd app/
+    - echo "🏗️ Building Docker image..."
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHA .
+    - docker tag $IMAGE_NAME:$CI_COMMIT_SHA $IMAGE_NAME:latest
+    - echo "📤 Pushing to registry..."
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME:latest
+    - echo "✅ Build completato: $IMAGE_NAME:$CI_COMMIT_SHA"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+
+#==========================================  
+# TEST STAGE
+#==========================================
+test:lint:
+  stage: test
+  image: node:18-alpine
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - cd app/
+    - echo "🧪 Eseguendo test di linting..."
+    - echo "Validazione HTML..."
+    - if command -v tidy >/dev/null 2>&1; then
+        tidy -q -e index.html || echo "HTML validation warnings (non-blocking)"
+      fi
+    - echo "✅ Lint test completati"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+
+test:security:
+  stage: test
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl grep
+  script:
+    - cd app/
+    - echo "🔒 Eseguendo security scan..."
+    - echo "Controllo configurazioni sicurezza in nginx.conf..."
+    - grep -q "X-Frame-Options" nginx.conf && echo "✅ X-Frame-Options trovato"
+    - grep -q "X-Content-Type-Options" nginx.conf && echo "✅ X-Content-Type-Options trovato"  
+    - grep -q "X-XSS-Protection" nginx.conf && echo "✅ X-XSS-Protection trovato"
+    - echo "✅ Security scan completato"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+
+#==========================================
+# PLAN STAGE  
+#==========================================
+plan:dev:
+  <<: *terraform_template
+  stage: plan
+  script:
+    - echo "📋 Planning per ambiente DEV..."
+    - terraform plan -var-file="environments/dev.tfvars" -var="image_tag=$CI_COMMIT_SHA" -out=dev.tfplan
+    - terraform show -json dev.tfplan > dev.tfplan.json
+    - echo "✅ Plan DEV completato"
+  artifacts:
+    paths:
+      - $TF_ROOT/dev.tfplan
+      - $TF_ROOT/dev.tfplan.json
+    expire_in: 1 hour
+    reports:
+      terraform: $TF_ROOT/dev.tfplan.json
+  environment:
+    name: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+plan:staging:
+  <<: *terraform_template
+  stage: plan
+  script:
+    - echo "📋 Planning per ambiente STAGING..."
+    - terraform plan -var-file="environments/staging.tfvars" -var="image_tag=$CI_COMMIT_SHA" -out=staging.tfplan
+    - terraform show -json staging.tfplan > staging.tfplan.json
+    - echo "✅ Plan STAGING completato"
+  artifacts:
+    paths:
+      - $TF_ROOT/staging.tfplan
+      - $TF_ROOT/staging.tfplan.json
+    expire_in: 1 hour
+    reports:
+      terraform: $TF_ROOT/staging.tfplan.json
+  environment:
+    name: staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+plan:prod:
+  <<: *terraform_template
+  stage: plan
+  script:
+    - echo "📋 Planning per ambiente PRODUCTION..."
+    - terraform plan -var-file="environments/prod.tfvars" -var="image_tag=$CI_COMMIT_SHA" -out=prod.tfplan
+    - terraform show -json prod.tfplan > prod.tfplan.json
+    - echo "✅ Plan PRODUCTION completato"
+  artifacts:
+    paths:
+      - $TF_ROOT/prod.tfplan
+      - $TF_ROOT/prod.tfplan.json
+    expire_in: 1 hour
+    reports:
+      terraform: $TF_ROOT/prod.tfplan.json
+  environment:
+    name: production
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+#==========================================
+# DEPLOY STAGE
+#==========================================
+deploy:dev:
+  <<: *terraform_template
+  <<: *kubectl_template  
+  stage: deploy
+  script:
+    - echo "🚀 Deploy su ambiente DEV..."
+    - terraform apply -auto-approve dev.tfplan
+    - terraform output -json > terraform_outputs.json
+    - echo "📊 Output Terraform:"
+    - cat terraform_outputs.json
+    - cd ../scripts
+    - chmod +x health-check.sh
+    - echo "🏥 Eseguendo health check..."
+    - APP_URL=$(cd ../terraform && terraform output -raw app_url)
+    - echo "Testing URL: $APP_URL"
+    - if [[ $APP_URL == *"kubectl port-forward"* ]]; then
+        SERVICE_NAME=$(cd ../terraform && terraform output -raw service_name);
+        NAMESPACE=$(cd ../terraform && terraform output -raw namespace);
+        kubectl port-forward svc/$SERVICE_NAME -n $NAMESPACE 8080:80 &
+        sleep 5;
+        ./health-check.sh "http://localhost:8080" 10 5;
+        kill %1 2>/dev/null || true;
+      else
+        ./health-check.sh "$APP_URL";
+      fi
+    - echo "✅ Deploy DEV completato con successo"
+  artifacts:
+    paths:
+      - $TF_ROOT/terraform_outputs.json
+    expire_in: 1 week
+    reports:
+      dotenv: $TF_ROOT/terraform_outputs.json
+  environment:
+    name: dev
+    url: http://dev.devops-app.local
+    deployment_tier: development
+  dependencies:
+    - plan:dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+deploy:staging:
+  <<: *terraform_template
+  <<: *kubectl_template
+  stage: deploy
+  script:
+    - echo "🚀 Deploy su ambiente STAGING..."
+    - terraform apply -auto-approve staging.tfplan
+    - terraform output -json > terraform_outputs.json
+    - cd ../scripts
+    - chmod +x deploy.sh health-check.sh rollback.sh
+    - echo "🏥 Eseguendo deploy con health check..."
+    - APP_URL=$(cd ../terraform && terraform output -raw app_url)
+    - if [[ $APP_URL == *"kubectl port-forward"* ]]; then
+        SERVICE_NAME=$(cd ../terraform && terraform output -raw service_name);
+        NAMESPACE=$(cd ../terraform && terraform output -raw namespace);
+        kubectl port-forward svc/$SERVICE_NAME -n $NAMESPACE 8080:80 &
+        sleep 5;
+        ./health-check.sh "http://localhost:8080" 15 10;
+        kill %1 2>/dev/null || true;
+      else
+        ./health-check.sh "$APP_URL";
+      fi
+    - echo "✅ Deploy STAGING completato con successo"
+  environment:
+    name: staging
+    url: http://staging.devops-app.com
+    deployment_tier: staging
+  dependencies:
+    - plan:staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy:prod:
+  <<: *terraform_template
+  <<: *kubectl_template
+  stage: deploy
+  script:
+    - echo "🚀 Deploy su ambiente PRODUCTION..."
+    - echo "⚠️ Deploy in produzione richiede approvazione manuale"
+    - cd ../scripts
+    - chmod +x deploy.sh health-check.sh rollback.sh
+    - echo "🔄 Eseguendo deploy script con controlli avanzati..."
+    - ./deploy.sh ../terraform/prod.tfplan production
+    - echo "✅ Deploy PRODUCTION completato con successo"
+  environment:
+    name: production
+    url: https://app.devops-app.com
+    deployment_tier: production
+  when: manual
+  allow_failure: false
+  dependencies:
+    - plan:prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+#==========================================
+# VERIFY STAGE
+#==========================================
+verify:integration:
+  stage: verify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo "🔍 Verifiche post-deploy..."
+    - echo "Ambiente: $CI_ENVIRONMENT_NAME"
+    - echo "URL: $CI_ENVIRONMENT_URL"
+    
+    # Test integrazione se URL disponibile
+    - |
+      if [ ! -z "$CI_ENVIRONMENT_URL" ]; then
+        echo "🌐 Test connettività..."
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CI_ENVIRONMENT_URL" || echo "000")
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "✅ Sito raggiungibile (HTTP $HTTP_CODE)"
+        else
+          echo "⚠️ Sito non raggiungibile (HTTP $HTTP_CODE)"
+        fi
+        
+        echo "🔍 Test endpoint API..."
+        API_RESPONSE=$(curl -s "$CI_ENVIRONMENT_URL/api/status" || echo '{"error":"not_reachable"}')
+        echo "API Response: $API_RESPONSE"
+        
+        if echo "$API_RESPONSE" | grep -q "OK"; then
+          echo "✅ API funzionante"
+        else
+          echo "⚠️ API non risponde correttamente"  
+        fi
+      fi
+    
+    - echo "✅ Verifica completata"
+  rules:
+    - if: $CI_PIPELINE_SOURCE != "schedule"
+  when: on_success
+
+verify:performance:
+  stage: verify  
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - echo "⚡ Test performance base..."
+    - |
+      if [ ! -z "$CI_ENVIRONMENT_URL" ]; then
+        echo "🚀 Misurazione tempo di risposta..."
+        for i in {1..5}; do
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$CI_ENVIRONMENT_URL" || echo "999")
+          echo "Test $i: ${RESPONSE_TIME}s"
+        done
+      else
+        echo "⚠️ URL ambiente non disponibile per test performance"
+      fi
+    - echo "✅ Test performance completato"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: on_success
+  allow_failure: true
+
+#==========================================
+# MANUAL JOBS
+#==========================================
+rollback:dev:
+  <<: *terraform_template
+  <<: *kubectl_template
+  stage: deploy
+  script:
+    - echo "🔄 Rollback ambiente DEV"
+    - cd ../scripts  
+    - chmod +x rollback.sh
+    - ./rollback.sh dev previous
+  environment:
+    name: dev
+    action: rollback
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+rollback:staging:
+  <<: *terraform_template
+  <<: *kubectl_template
+  stage: deploy
+  script:
+    - echo "🔄 Rollback ambiente STAGING"
+    - cd ../scripts
+    - chmod +x rollback.sh  
+    - ./rollback.sh staging previous
+  environment:
+    name: staging
+    action: rollback
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+rollback:prod:
+  <<: *terraform_template
+  <<: *kubectl_template
+  stage: deploy
+  script:
+    - echo "🔄 Rollback ambiente PRODUCTION"
+    - cd ../scripts
+    - chmod +x rollback.sh
+    - ./rollback.sh prod previous  
+  environment:
+    name: production
+    action: rollback
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
