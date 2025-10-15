@@ -1,0 +1,62 @@
+# Esempio di configurazione per terraform.tfvars
+# Copia questo file in terraform.tfvars e personalizza i valori
+
+# OBBLIGATORIO: Nome dello storage account (deve essere univoco globalmente)
+# Solo lettere minuscole e numeri, 3-24 caratteri
+storage_account_name = "terraform01storage"
+
+# Configurazione base
+resource_group_name = "terraform-azure-esempio01-storage"
+location           = "West Europe"  # Altre opzioni: "North Europe", "East US", "West US 2", etc.
+
+# Configurazione dello storage
+account_tier     = "Standard"  # Standard o Premium
+replication_type = "LRS"      # LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS
+account_kind     = "StorageV2" # StorageV2 (consigliato), BlobStorage, BlockBlobStorage, etc.
+
+# Container da creare
+containers = [
+  {
+    name        = "documents"
+    access_type = "private"
+  },
+  {
+    name        = "images"
+    access_type = "private"
+  },
+  {
+    name        = "public-assets"
+    access_type = "blob"  # Accesso pubblico ai blob
+  }
+]
+
+# Configurazioni di sicurezza
+min_tls_version         = "TLS1_2"
+allow_public_access     = true   # Consenti accesso pubblico ai blob
+public_network_access   = true   # Accesso dalla rete pubblica
+
+# Configurazioni di backup e versioning
+enable_versioning                      = true
+enable_soft_delete                     = true
+soft_delete_retention_days             = 30
+enable_container_soft_delete           = true
+container_soft_delete_retention_days   = 30
+enable_change_feed                     = false
+change_feed_retention_days             = 7
+
+# Lifecycle management (opzionale per ottimizzare i costi)
+enable_lifecycle_policy      = true
+lifecycle_prefix_match       = ["logs/", "temp/"]
+lifecycle_cool_after_days    = 30   # Sposta a Cool tier dopo 30 giorni
+lifecycle_archive_after_days = 90   # Sposta ad Archive tier dopo 90 giorni
+lifecycle_delete_after_days  = 365  # Elimina dopo 1 anno
+
+# Tags per organizzazione e billing
+tags = {
+  Environment = "development"  # development, staging, production
+  Project     = "terraform-azure-esempio01-storage"
+  Owner       = "alnao"
+  Department  = "IT"
+  CostCenter  = "CC-001"
+  Purpose     = "storage-example"
+}

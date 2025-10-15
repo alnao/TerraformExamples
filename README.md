@@ -1,31 +1,39 @@
 # Terraform Examples
-Questo repository raccoglie una collezione di esempi pratici per l'utilizzo di Terraform su diversi provider cloud, principalmente AWS e Azure. Ogni cartella contiene un esempio autonomo, pensato per mostrare best practice, modularità e parametrizzazione.
-
+  <p align="center">
+   <img src="https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white"   height=60/>
+   <img src="https://img.shields.io/badge/AWS-%23FF9900?style=for-the-badge&logo=AmazonAWS&logoColor=white"    height=60/>
+   <img src="https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white"   height=60/>
+  </p>
 
 **Terraform** è uno strumento open source per l'Infrastructure as Code (IaC) che consente di definire, gestire e versionare infrastrutture cloud tramite file di configurazione testuali. Supporta numerosi provider, tra cui AWS, Azure, Google Cloud e molti altri.
 
-
-Ogni esempio è contenuto in una propria cartella (es: `AWS-Esempio01-BucketS3`, `Azure-Esempiop02-VM`) e ogni esempio include:
-  - File di configurazione Terraform (main.tf, variables.tf, `outputs.tf`, ecc.)
+Questo repository raccoglie una collezione di esempi pratici per l'utilizzo di Terraform su diversi provider cloud, principalmente AWS e Azure. Ogni cartella contiene un esempio autonomo, pensato per mostrare best practice, modularità e parametrizzazione.
+Ogni esempio è contenuto in una cartella specifica e include:
+  - File di configurazione Terraform (`main.tf`, `variables.tf`, `outputs.tf`, ecc. )
   - Un file README.md con istruzioni specifiche
   - Eventuali moduli riutilizzabili
 
 
-**Prerequisiti**:
+**Prerequisiti** necessari al funzionamento degli esempi:
 - [Terraform](https://www.terraform.io/downloads.html) installato, consigliato anche Docker
-- Account cloud attivo e funzionante (AWS, Azure, ecc.), prestare sempre attenzione ai costi
-- Per ogni cloud attivo, è necessario avere le credenziali configurate
-   - Per AWS devono essere configurate le credenziali con `aws configure`
-   - Per Azure *coming soon*
+- Account cloud attivo e funzionante (AWS, Azure, ecc.), 
+   - ⚠️ **Attenzione ai costi**: i vari cloud provider possono prevedere dei costi in base ai servizi usati
+- Per ogni cloud attivo, è necessario avere le credenziali configurate:
+   - Per AWS devono essere configurate le credenziali tramite il comando `aws configure` della AWS CLI
+   - Per Azure devono essere configurate le credenziali tramite il comando `az login` della Azure CLI
 
 
 ## Esempi
-L'elenco degli esempi disponibili:
-- **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili
-- **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*
-- **DOCKER-Esempio01-Nginx**: crea un container Docker *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, mappando la porta 8001 e montando una directory locale per i file web
-- **KUBERNETES-Esempio01-Nginx**: crea un deployment Kubernetes *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, usando ConfigMap per i file web, Service con NodePort e supporto per scaling automatico (richiede cluster Kubernetes locale come minikube o kind)
-- **AZURE**: *coming soon*
+- **AWS**
+   - **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili
+- **AZURE**
+   - **AZURE-Esempio01-Storage**: crea un Azure Storage Account con container blob (equivalente ad AWS S3), con configurazioni avanzate per sicurezza, versioning, soft delete, lifecycle management e replica geografica
+- **DEVOPS**
+   - **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*
+- **DOCKER**
+   - **DOCKER-Esempio01-Nginx**: crea un container Docker *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, mappando la porta 8001 e montando una directory locale per i file web
+- **KUBERNETES**
+   - **KUBERNETES-Esempio01-Nginx**: crea un deployment Kubernetes *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, usando ConfigMap per i file web, Service con NodePort e supporto per scaling automatico (richiede cluster Kubernetes locale come minikube o kind)
 
 
 ## Comandi principali
@@ -55,7 +63,7 @@ L'elenco degli esempi disponibili:
 
 
 # &lt; AlNao /&gt;
-Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 
 
 Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
