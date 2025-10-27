@@ -2,13 +2,13 @@
 variable "resource_group_name" {
   description = "Nome del Resource Group"
   type        = string
-  default     = "rg-storage-example"
+  default     = "alnao-terraform-esempio01"
 }
 
 variable "location" {
   description = "Regione Azure dove creare le risorse"
   type        = string
-  default     = "West Europe"
+  default     = "westeurope"
 }
 
 # Variabili per lo Storage Account
@@ -18,7 +18,8 @@ variable "storage_account_name" {
   validation {
     condition     = can(regex("^[a-z0-9]{3,24}$", var.storage_account_name))
     error_message = "Il nome dello storage account deve essere lungo 3-24 caratteri e contenere solo lettere minuscole e numeri."
-  }
+  } 
+  default    = "alnaoterraformesempio01"
 }
 
 variable "account_tier" {

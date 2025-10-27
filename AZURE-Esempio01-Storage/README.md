@@ -8,7 +8,9 @@ I componenti creati da questo esempio sono:
 - Lifecycle Management Policy: Policy opzionale per gestire il ciclo di vita dei dati
 - Configurazioni di sicurezza: TLS minimo, accesso pubblico controllato, soft delete
 
-I prerequisiti per il corretto funzionamento sono
+Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage`, modificare il file `backend.tf` per personalizzare questa configurazione.
+
+**Prerequisiti**:
 1. **Azure CLI** installato e configurato:
    ```bash
    # Installazione Azure CLI (Ubuntu/Debian)
@@ -24,7 +26,7 @@ I prerequisiti per il corretto funzionamento sono
    - Storage Accounts
    - Storage Containers
 
-Le Variabili principali del template sono
+Le **Variabili principali** del template sono
 - `storage_account_name` : Nome univoco dello storage account (3-24 caratteri, solo minuscole e numeri)
 - `resource_group_name` : Nome del resource group
 - `location` : Regione Azure (default "West Europe")
@@ -34,24 +36,13 @@ Le Variabili principali del template sono
 - `enable_versioning` : Abilita versioning dei blob
 - `enable_soft_delete` : Abilita soft delete
 
-
-L'esempio espone diversi output utili per integrazioni:
+L'esempio espone diversi **output** utili per integrazioni:
 - Informazioni base: nome, ID, location del storage account
 - Endpoint: URL per accesso blob, web, Data Lake
 - Chiavi di accesso: connection string e access key (marcate come sensitive)
 - Container: nomi e URL dei container creati
 - Configurazioni: tier, replica, sicurezza
-- Esempi di utilizzo degli output
-    ```bash
-    # Visualizza tutti gli output (esclusi i sensitive)
-    terraform output
 
-    # Visualizza un output specifico
-    terraform output storage_account_name
-
-    # Visualizza output sensitive
-    terraform output -raw storage_account_primary_access_key
-    ```
 
 ⚠️ **Attenzione ai costi**: Azure Storage ha costi basati su:
 - Quantità di dati archiviati
@@ -68,7 +59,7 @@ Monitora sempre i costi nel Azure Portal.
     cd AZURE-Esempio01-Storage
     terraform init
     ```
-2. Configurazione delle variabili
+2. Configurazione delle variabili (facoltativo)
     Crea un file `terraform.tfvars` per personalizzare la configurazione:
 
     ```hcl
@@ -144,22 +135,34 @@ Monitora sempre i costi nel Azure Portal.
     ```
 - Azure CLI
     ```bash
-    # Upload file
-    echo "Ciao" > testfile.txt
-    az storage blob upload --account-name terraform01storage --container-name documents --name testfile.txt --file ./testfile.txt
+
+    # Create & upload file
+    echo "Ciao" > /tmp/testfileXazure.txt
+    az storage blob upload --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileXazure.txt
 
     # Download file
-    az storage blob download --account-name terraform01storage --container-name documents --name testfile.txt --file ./testfile2.txt
-    cat testfile2.txt 
+    az storage blob download --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileFromAzure.txt
+    cat /tmp/testfileFromAzure.txt 
 
     # URL pubblici (solo per container "public-assets")
     # Ottieni la URL base
     terraform output storage_account_primary_blob_endpoint
     AZ_URL=$(terraform output storage_account_primary_blob_endpoint)
-    # URL formato: https://terraform01storage.blob.core.windows.net/public-assets/nomefile.jpg
+    # URL formato: https://alnaoterraformesempio01.blob.core.windows.net/public-assets/nomefile.jpg
     # curl "$AZ_URL/documents/testfile.txt"
-    curl https://terraform01storage.blob.core.windows.net/documents/testfile.txt
-    # non va per mancanza di permessi
+    curl https://alnaoterraformesempio01.blob.core.windows.net/documents/testfile.txt
+    # potrebbe non andare con errore "Public access is not permitted on this storage account" per mancanza di permessi
+    ```
+- Esempi di utilizzo degli output
+    ```bash
+    # Visualizza tutti gli output (esclusi i sensitive)
+    terraform output
+
+    # Visualizza un output specifico
+    terraform output storage_account_name
+
+    # Visualizza output sensitive
+    terraform output -raw storage_account_primary_access_key
     ```
 
 ## Confronto con AWS S3

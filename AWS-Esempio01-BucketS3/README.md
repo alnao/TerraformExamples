@@ -47,7 +47,7 @@ module "bucket" {
    ```
 
 ## Note
-- Lo stato remoto viene salvato nel bucket `terraform-alnao` con chiave `Esempio01bucketS3/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio01bucketS3/terraform.tfstate`.
 - Modifica le variabili nel file `variables.tf` o tramite CLI/TFVARS per personalizzare il comportamento.
 
 
