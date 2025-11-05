@@ -1,6 +1,7 @@
 # AZURE Esempio 07 - Logic Apps
 
 Logic App che copia blob da storage A a B e invoca Function per logging.
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 ## Risorse
 - Resource Group

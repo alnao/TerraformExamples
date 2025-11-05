@@ -7,7 +7,7 @@ variable "region" {
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
-  default     = "aws-esempio09-dynamodb"
+  default     = "alnao-terraform-aws-esempio09-dynamodb"
 }
 
 # Billing configuration
@@ -188,6 +188,25 @@ variable "replica_regions" {
   description = "List of regions for global table replicas"
   type        = list(string)
   default     = []
+}
+
+# Lambda and EventBridge configuration
+variable "enable_s3_lambda_integration" {
+  description = "Enable S3 to Lambda via EventBridge integration"
+  type        = bool
+  default     = true
+}
+
+variable "enable_delete_tracking" {
+  description = "Enable tracking of S3 delete events"
+  type        = bool
+  default     = false
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention in days"
+  type        = number
+  default     = 7
 }
 
 # Tags

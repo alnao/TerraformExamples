@@ -1,5 +1,6 @@
 # AWS Esempio 02 - Istanza EC2
 Questo esempio mostra come creare un'istanza EC2 su AWS usando Terraform.
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**:
 - EC2 Instance: Istanza EC2 con Amazon Linux 2023

@@ -45,7 +45,7 @@ variable "test_container_name" {
 variable "function_app_name" {
   description = "Nome della Function App"
   type        = string
-  default     = "func-blob-list-05"
+  default     = "alnao-terraform-esempio05-functions"
 }
 
 variable "os_type" {
@@ -112,146 +112,16 @@ variable "enable_managed_identity" {
 }
 
 # Function Code
-variable "function_code_init" {
-  description = "Codice Python della function"
-  type        = string
-  default     = <<-EOF
-import logging
-import json
-import os
-import azure.functions as func
-from azure.storage.blob import BlobServiceClient
-from urllib.parse import unquote
-
-def main(req: func.HttpRequest) -> func.HttpResponse:
-    """
-    Azure Function che lista i blob in un container.
-    Può ricevere il path come query parameter.
-    """
-    logging.info('Python HTTP trigger function processed a request.')
-
-    try:
-        # Ottieni configurazione dall'ambiente
-        connection_string = os.environ.get('TEST_STORAGE_CONNECTION_STRING')
-        container_name = os.environ.get('TEST_CONTAINER_NAME', 'testdata')
-        
-        # Ottieni il path dal query parameter
-        path = req.params.get('path', '')
-        if path:
-            path = unquote(path)
-            if not path.endswith('/') and path != '':
-                path += '/'
-        
-        logging.info(f'Listing blobs in container: {container_name}, path: {path}')
-        
-        # Crea blob service client
-        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-        container_client = blob_service_client.get_container_client(container_name)
-        
-        # Lista blob con prefix
-        blobs = []
-        blob_list = container_client.list_blobs(name_starts_with=path)
-        
-        for blob in blob_list:
-            blobs.append({
-                'name': blob.name,
-                'size': blob.size,
-                'last_modified': blob.last_modified.isoformat() if blob.last_modified else None,
-                'content_type': blob.content_settings.content_type if blob.content_settings else None,
-                'blob_type': str(blob.blob_type) if blob.blob_type else 'BlockBlob'
-            })
-        
-        # Prepara risposta
-        result = {
-            'container': container_name,
-            'path': path,
-            'count': len(blobs),
-            'blobs': blobs
-        }
-        
-        return func.HttpResponse(
-            body=json.dumps(result, indent=2),
-            mimetype='application/json',
-            status_code=200
-        )
-        
-    except Exception as e:
-        logging.error(f'Error: {str(e)}')
-        return func.HttpResponse(
-            body=json.dumps({'error': str(e)}),
-            mimetype='application/json',
-            status_code=500
-        )
-  EOF
-}
-
-variable "function_json" {
-  description = "Configurazione function.json"
-  type        = string
-  default     = <<-EOF
-{
-  "scriptFile": "__init__.py",
-  "bindings": [
-    {
-      "authLevel": "function",
-      "type": "httpTrigger",
-      "direction": "in",
-      "name": "req",
-      "methods": [
-        "get",
-        "post"
-      ],
-      "route": "list-blobs"
-    },
-    {
-      "type": "http",
-      "direction": "out",
-      "name": "$return"
-    }
-  ]
-}
-  EOF
-}
-
-variable "host_json" {
-  description = "Configurazione host.json"
-  type        = string
-  default     = <<-EOF
-{
-  "version": "2.0",
-  "logging": {
-    "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": true,
-        "maxTelemetryItemsPerSecond": 20
-      }
-    },
-    "logLevel": {
-      "default": "Information",
-      "Function": "Information"
-    }
-  },
-  "extensionBundle": {
-    "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[4.*, 5.0.0)"
-  }
-}
-  EOF
-}
-
-variable "requirements_txt" {
-  description = "Requirements Python"
-  type        = string
-  default     = <<-EOF
-azure-functions
-azure-storage-blob>=12.19.0
-  EOF
-}
+# Note: Il codice Python è ora separato nei file:
+# - __init__.py: Codice principale della function
+# - function.json: Configurazione binding
+# - host.json: Configurazione runtime
+# - requirements.txt: Dipendenze Python
 
 variable "auto_deploy_function" {
   description = "Auto deploy della function (solo per demo)"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Metric Alerts

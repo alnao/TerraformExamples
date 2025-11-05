@@ -1,81 +1,69 @@
 # AWS Esempio 06 - EventBridge con Lambda
 
 Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamente una Lambda function quando un file viene caricato in un bucket S3.
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
-## Risorse create
-
-- **S3 Bucket**: Bucket sorgente che genera eventi
-- **S3 Bucket Notification**: Configurazione EventBridge per S3
-- **Lambda Function**: Function che processa gli eventi
-- **IAM Role & Policies**: Permessi per Lambda
-- **EventBridge Rule**: Rule per catturare eventi S3 Object Created
-- **EventBridge Target**: Target Lambda per la rule
-- **Lambda Permission**: Permesso per EventBridge di invocare Lambda
-- **CloudWatch Log Group**: Log della Lambda
-- **CloudWatch Alarms**: (Opzionale) Alert per errori
-- **SQS Dead Letter Queue**: (Opzionale) Per eventi falliti
+**Risorse create**
+- S3 Bucket: Bucket sorgente che genera eventi
+- S3 Bucket Notification: Configurazione EventBridge per S3
+- Lambda Function: Function che processa gli eventi
+- IAM Role & Policies: Permessi per Lambda
+- EventBridge Rule: Rule per catturare eventi S3 Object Created
+- EventBridge Target: Target Lambda per la rule
+- Lambda Permission: Permesso per EventBridge di invocare Lambda
+- CloudWatch Log Group: Log della Lambda
+- CloudWatch Alarms: (Opzionale) Alert per errori
+- SQS Dead Letter Queue: (Opzionale) Per eventi falliti
 - Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio06EventBridge/terraform.tfstate`.
 
-
-## Prerequisiti
-
+**Prerequisiti**
 - Account AWS con credenziali configurate
 - Terraform installato (versione >= 1.0)
-## Caratteristiche
 
-✅ **Event-Driven Architecture** con EventBridge  
-✅ **S3 Event Notifications** tramite EventBridge  
-✅ **Lambda Processing** automatico al caricamento file  
-✅ **Pattern Matching** per filtrare eventi specifici  
-✅ **Input Transformer** per personalizzare payload  
-✅ **Retry Policy** configurabile  
-✅ **Dead Letter Queue** per eventi falliti  
-✅ **CloudWatch Alarms** per monitoring  
-✅ **Multiple Triggers** (Create, Delete, etc.)  
+**Costi**
+- EventBridge: $1.00 per milione eventi
+- Lambda: $0.20 per milione richieste + $0.0000166667 per GB-s
+- S3: Storage + requests standard
+- CloudWatch Logs: $0.50 per GB ingested
 
-## Utilizzo
 
-```bash
-terraform init
-terraform apply -var="source_bucket_name=my-unique-bucket-123"
-```
+## Comandi
+- Creazione
+  ```bash
+  NOME_BUCKET="alnao-terraform-aws-esempio06-eventbridge-bucket"
+  terraform init
+  terraform plan
+  terraform apply -var="source_bucket_name=$NOME_BUCKET"
+  ```
+- Test
 
-## Test
+  ```bash
+  # Upload file di test
+  echo "Hello World" > /tmp/test.txt
+  aws s3 cp /tmp/test.txt s3://$NOME_BUCKET/test.txt
 
-```bash
-# Upload file di test
-echo "Hello World" > test.txt
-aws s3 cp test.txt s3://my-unique-bucket-123/test.txt
+  # Visualizza logs Lambda
+  aws logs tail /aws/lambda/alnao-terraform-aws-esempio06-eventbridge-lambda --follow
 
-# Visualizza logs Lambda
-aws logs tail /aws/lambda/s3-event-processor --follow
+  # Visualizza metriche EventBridge
+  aws cloudwatch get-metric-statistics \
+    --namespace AWS/Events \
+    --metric-name Invocations \
+    --dimensions Name=RuleName,Value=s3-object-created-rule \
+    --start-time $(date -u -d '1 hour ago' --iso-8601) \
+    --end-time $(date -u --iso-8601) \
+    --period 300 \
+    --statistics Sum
+  ```
+- Distruzione
+  ```bash
+  # Svuota bucket prima
+  aws s3 rm s3://$NOME_BUCKET --recursive
 
-# Visualizza metriche EventBridge
-aws cloudwatch get-metric-statistics \
-  --namespace AWS/Events \
-  --metric-name Invocations \
-  --dimensions Name=RuleName,Value=s3-object-created-rule \
-  --start-time $(date -u -d '1 hour ago' --iso-8601) \
-  --end-time $(date -u --iso-8601) \
-  --period 300 \
-  --statistics Sum
-```
+  terraform destroy
+  ```
 
-## Costi
 
-- **EventBridge**: $1.00 per milione eventi
-- **Lambda**: $0.20 per milione richieste + $0.0000166667 per GB-s
-- **S3**: Storage + requests standard
-- **CloudWatch Logs**: $0.50 per GB ingested
-
-## Best Practices
-
-1. **Event Patterns**: Filtrare eventi specifici
-2. **Retry Policy**: Configurare retry appropriati
-3. **DLQ**: Gestire eventi falliti
-4. **Monitoring**: CloudWatch alarms
-5. **IAM Policies**: Least privilege
-6. **Input Transformer**: Semplificare payload Lambda
 
 ## Riferimenti
 

@@ -7,13 +7,13 @@ variable "region" {
 variable "source_bucket_name" {
   description = "Nome bucket sorgente"
   type        = string
-  default     = "aws-esempio07-step-source"
+  default     = "alnao-terraform-aws-esempio07-step-source"
 }
 
 variable "destination_bucket_name" {
   description = "Nome bucket destinazione"
   type        = string
-  default     = "aws-esempio07-step-dest"
+  default     = "alnao-terraform-aws-esempio07-step-dest"
 }
 
 variable "force_destroy" {
@@ -25,54 +25,13 @@ variable "force_destroy" {
 variable "step_function_name" {
   description = "Nome Step Function"
   type        = string
-  default     = "s3-copy-and-log-workflow"
+  default     = "alnao-terraform-aws-esempio07-step-function"
 }
 
 variable "logger_function_name" {
   description = "Nome Lambda logger"
   type        = string
-  default     = "step-function-logger"
-}
-
-variable "lambda_logger_code" {
-  description = "Codice Lambda logger"
-  type        = string
-  default     = <<-EOF
-import json
-from datetime import datetime
-
-def lambda_handler(event, context):
-    """Lambda che scrive log con print per Step Function"""
-    
-    action = event.get('action', 'unknown')
-    timestamp = datetime.now().isoformat()
-    
-    print(f"[{timestamp}] Step Function Log Event")
-    print(f"Action: {action}")
-    
-    if action == 'copy_completed':
-        print(f"✓ File copied successfully")
-        print(f"  Source: s3://{event.get('sourceBucket')}/{event.get('objectKey')}")
-        print(f"  Destination: s3://{event.get('destinationBucket')}/{event.get('objectKey')}")
-        print(f"  Copy Result: {json.dumps(event.get('copyResult', {}))}")
-        
-    elif action == 'copy_failed':
-        print(f"✗ File copy failed")
-        print(f"  Source: s3://{event.get('sourceBucket')}/{event.get('objectKey')}")
-        print(f"  Error: {json.dumps(event.get('error', {}))}")
-        
-    elif action == 'lambda_failed':
-        print(f"✗ Lambda invocation failed")
-        print(f"  Error: {json.dumps(event.get('error', {}))}")
-    
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'message': f'Log written for action: {action}',
-            'timestamp': timestamp
-        })
-    }
-  EOF
+  default     = "alnao-terraform-aws-esempio07-step-function-logger"
 }
 
 variable "step_function_log_level" {

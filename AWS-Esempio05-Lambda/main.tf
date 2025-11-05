@@ -79,10 +79,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/lambda_function.zip"
 
-  source {
-    content  = var.lambda_code
-    filename = "lambda_function.py"
-  }
+  source_file = "${path.module}/lambda_function.py"
 }
 
 # Lambda Function

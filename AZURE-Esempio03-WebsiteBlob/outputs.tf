@@ -25,7 +25,7 @@ output "website_url" {
 
 output "cdn_endpoint_url" {
   description = "URL del CDN endpoint (se abilitato)"
-  value       = var.enable_cdn ? "https://${azurerm_cdn_endpoint.website[0].host_name}" : null
+  value       = var.enable_cdn ? "https://${azurerm_cdn_endpoint.website[0].fqdn}" : null
 }
 
 output "cdn_custom_domain_url" {

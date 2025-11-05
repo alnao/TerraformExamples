@@ -1,0 +1,80 @@
+{
+  "Comment": "Step Function che copia file da bucket A a bucket B e poi invoca Lambda per logging",
+  "StartAt": "CopyObject",
+  "States": {
+    "CopyObject": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:copyObject",
+      "Parameters": {
+        "Bucket.$": "$.destinationBucket",
+        "CopySource.$": "States.Format('{}/{}', $.sourceBucket, $.objectKey)",
+        "Key.$": "$.objectKey"
+      },
+      "ResultPath": "$.copyResult",
+      "Next": "InvokeLoggerLambda",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "CopyFailed"
+        }
+      ]
+    },
+    "InvokeLoggerLambda": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${logger_function_arn}",
+        "Payload": {
+          "action": "copy_completed",
+          "sourceBucket.$": "$.sourceBucket",
+          "destinationBucket.$": "$.destinationBucket",
+          "objectKey.$": "$.objectKey",
+          "copyResult.$": "$.copyResult"
+        }
+      },
+      "ResultPath": "$.lambdaResult",
+      "Next": "Success",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "LambdaFailed"
+        }
+      ]
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "CopyFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${logger_function_arn}",
+        "Payload": {
+          "action": "copy_failed",
+          "error.$": "$.error",
+          "sourceBucket.$": "$.sourceBucket",
+          "objectKey.$": "$.objectKey"
+        }
+      },
+      "ResultPath": "$.lambdaResult",
+      "Next": "Failed"
+    },
+    "LambdaFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${logger_function_arn}",
+        "Payload": {
+          "action": "lambda_failed",
+          "error.$": "$.error"
+        }
+      },
+      "End": true
+    },
+    "Failed": {
+      "Type": "Fail"
+    }
+  }
+}

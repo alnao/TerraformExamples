@@ -75,9 +75,14 @@ resource "aws_iam_role_policy" "step_functions_policy" {
       {
         Effect = "Allow"
         Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:CreateLogDelivery",
+          "logs:GetLogDelivery",
+          "logs:UpdateLogDelivery",
+          "logs:DeleteLogDelivery",
+          "logs:ListLogDeliveries",
+          "logs:PutResourcePolicy",
+          "logs:DescribeResourcePolicies",
+          "logs:DescribeLogGroups"
         ]
         Resource = "*"
       }
@@ -113,7 +118,7 @@ data "archive_file" "lambda_logger_zip" {
   output_path = "${path.module}/lambda_logger.zip"
 
   source {
-    content  = var.lambda_logger_code
+    content  = file("${path.module}/lambda_function.py")
     filename = "lambda_function.py"
   }
 }
@@ -149,81 +154,8 @@ resource "aws_sfn_state_machine" "main" {
   name     = var.step_function_name
   role_arn = aws_iam_role.step_functions_role.arn
 
-  definition = jsonencode({
-    Comment = "Step Function che copia file da bucket A a bucket B e poi invoca Lambda per logging"
-    StartAt = "CopyObject"
-    States = {
-      CopyObject = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::aws-sdk:s3:copyObject"
-        Parameters = {
-          "Bucket.$"     = "$.destinationBucket"
-          "CopySource.$" = "States.Format('{}/{}', $.sourceBucket, $.objectKey)"
-          "Key.$"        = "$.objectKey"
-        }
-        ResultPath = "$.copyResult"
-        Next       = "InvokeLoggerLambda"
-        Catch = [{
-          ErrorEquals = ["States.ALL"]
-          ResultPath  = "$.error"
-          Next        = "CopyFailed"
-        }]
-      }
-      InvokeLoggerLambda = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::lambda:invoke"
-        Parameters = {
-          "FunctionName" = aws_lambda_function.logger.arn
-          "Payload" = {
-            "action"            = "copy_completed"
-            "sourceBucket.$"    = "$.sourceBucket"
-            "destinationBucket.$" = "$.destinationBucket"
-            "objectKey.$"       = "$.objectKey"
-            "copyResult.$"      = "$.copyResult"
-          }
-        }
-        ResultPath = "$.lambdaResult"
-        Next       = "Success"
-        Catch = [{
-          ErrorEquals = ["States.ALL"]
-          ResultPath  = "$.error"
-          Next        = "LambdaFailed"
-        }]
-      }
-      Success = {
-        Type = "Succeed"
-      }
-      CopyFailed = {
-        Type = "Task"
-        Resource = "arn:aws:states:::lambda:invoke"
-        Parameters = {
-          "FunctionName" = aws_lambda_function.logger.arn
-          "Payload" = {
-            "action" = "copy_failed"
-            "error.$" = "$.error"
-            "sourceBucket.$" = "$.sourceBucket"
-            "objectKey.$" = "$.objectKey"
-          }
-        }
-        ResultPath = "$.lambdaResult"
-        Next = "Failed"
-      }
-      LambdaFailed = {
-        Type = "Task"
-        Resource = "arn:aws:states:::lambda:invoke"
-        Parameters = {
-          "FunctionName" = aws_lambda_function.logger.arn
-          "Payload" = {
-            "action" = "lambda_failed"
-            "error.$" = "$.error"
-          }
-        }
-        End = true
-      }
-      Failed = {
-        Type = "Fail"
-      }
-    }
+  definition = templatefile("${path.module}/step_function_definition.json", {
+    logger_function_arn = aws_lambda_function.logger.arn
   })
 
   logging_configuration {
@@ -270,11 +202,13 @@ resource "aws_cloudwatch_event_target" "step_function" {
       bucket = "$.detail.bucket.name"
       key    = "$.detail.object.key"
     }
-    input_template = jsonencode({
-      sourceBucket      = "<bucket>"
-      destinationBucket = aws_s3_bucket.destination.id
-      objectKey         = "<key>"
-    })
+    input_template = <<EOF
+{
+  "sourceBucket": <bucket>,
+  "destinationBucket": "${aws_s3_bucket.destination.id}",
+  "objectKey": <key>
+}
+EOF
   }
 }
 

@@ -95,10 +95,8 @@ resource "aws_dynamodb_table" "main" {
     }
   }
 
-  # Autoscaling (solo per PROVISIONED)
-  lifecycle {
-    ignore_changes = var.billing_mode == "PROVISIONED" && var.enable_autoscaling ? [read_capacity, write_capacity] : []
-  }
+  # Note: Se abiliti autoscaling, Terraform potrebbe rilevare drift su read_capacity/write_capacity
+  # Questo è normale perché autoscaling modifica questi valori dinamicamente
 
   tags = var.tags
 }
@@ -193,13 +191,19 @@ resource "aws_cloudwatch_metric_alarm" "write_throttle" {
 }
 
 # DynamoDB Global Table (opzionale, per multi-region)
-resource "aws_dynamodb_table_replica" "replica" {
-  for_each = toset(var.replica_regions)
+# Note: Per Global Tables è necessario configurare provider AWS multipli per ogni regione
+# Esempio di configurazione:
+# provider "aws" {
+#   alias  = "replica"
+#   region = "eu-west-1"
+# }
+# 
+# resource "aws_dynamodb_table_replica" "replica" {
+#   provider         = aws.replica
+#   global_table_arn = aws_dynamodb_table.main.arn
+#   point_in_time_recovery = var.enable_point_in_time_recovery
+#   tags = var.tags
+# }
 
-  global_table_arn = aws_dynamodb_table.main.arn
-  region           = each.value
-
-  point_in_time_recovery = var.enable_point_in_time_recovery
-
-  tags = var.tags
-}
+# Per semplicità, global tables richiedono configurazione manuale o moduli dedicati
+# Riferimento: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table_replica

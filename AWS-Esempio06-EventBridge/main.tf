@@ -84,12 +84,8 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 # Lambda Function Code
 data "archive_file" "lambda_zip" {
   type        = "zip"
+  source_file = "${path.module}/lambda_function.py"
   output_path = "${path.module}/lambda_function.zip"
-
-  source {
-    content  = var.lambda_code
-    filename = "lambda_function.py"
-  }
 }
 
 # Lambda Function
@@ -164,8 +160,8 @@ resource "aws_cloudwatch_event_target" "lambda_target" {
 
   # Retry policy
   retry_policy {
-    maximum_event_age       = var.maximum_event_age
-    maximum_retry_attempts  = var.maximum_retry_attempts
+    maximum_event_age_in_seconds = var.maximum_event_age
+    maximum_retry_attempts       = var.maximum_retry_attempts
   }
 
   # Dead letter queue (opzionale)

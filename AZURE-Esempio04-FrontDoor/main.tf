@@ -147,7 +147,7 @@ resource "azurerm_cdn_frontdoor_rule" "static_files" {
 
   actions {
     route_configuration_override_action {
-      cache_behavior                = "Override"
+      cache_behavior                = "OverrideAlways"
       cache_duration                = var.static_files_cache_duration
       compression_enabled           = var.enable_compression
       query_string_caching_behavior = "IgnoreQueryString"

@@ -65,18 +65,14 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
 data "archive_file" "lambda_list_files_zip" {
   type        = "zip"
   output_path = "${path.module}/lambda_list_files.zip"
-
-  source {
-    content  = var.lambda_list_files_code
-    filename = "lambda_function.py"
-  }
+  source_file = "${path.module}/lambda_list_files.py"
 }
 
 resource "aws_lambda_function" "list_files" {
   filename         = data.archive_file.lambda_list_files_zip.output_path
   function_name    = "${var.api_name}-list-files"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
+  handler         = "lambda_list_files.lambda_handler"
   source_code_hash = data.archive_file.lambda_list_files_zip.output_base64sha256
   runtime         = "python3.11"
   timeout         = 30
@@ -95,18 +91,14 @@ resource "aws_lambda_function" "list_files" {
 data "archive_file" "lambda_hypotenuse_zip" {
   type        = "zip"
   output_path = "${path.module}/lambda_hypotenuse.zip"
-
-  source {
-    content  = var.lambda_hypotenuse_code
-    filename = "lambda_function.py"
-  }
+  source_file = "${path.module}/lambda_calculate_hypotenuse.py"
 }
 
 resource "aws_lambda_function" "calculate_hypotenuse" {
   filename         = data.archive_file.lambda_hypotenuse_zip.output_path
   function_name    = "${var.api_name}-calculate-hypotenuse"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
+  handler         = "lambda_calculate_hypotenuse.lambda_handler"
   source_code_hash = data.archive_file.lambda_hypotenuse_zip.output_base64sha256
   runtime         = "python3.11"
   timeout         = 30

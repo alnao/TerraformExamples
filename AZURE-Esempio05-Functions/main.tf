@@ -108,6 +108,11 @@ resource "azurerm_linux_function_app" "main" {
     # App service logs
     application_insights_connection_string = azurerm_application_insights.main.connection_string
     application_insights_key               = azurerm_application_insights.main.instrumentation_key
+
+    #zip_deploy_file = data.archive_file.function_code.output_path
+    #depends_on = [
+    #  data.archive_file.function_code
+    #]
   }
 
   app_settings = merge(
@@ -147,10 +152,6 @@ resource "azurerm_windows_function_app" "main" {
   storage_account_access_key = azurerm_storage_account.function.primary_access_key
 
   site_config {
-    application_stack {
-      python_version = var.python_version
-    }
-
     cors {
       allowed_origins     = var.cors_allowed_origins
       support_credentials = var.cors_support_credentials
@@ -192,26 +193,23 @@ resource "azurerm_role_assignment" "storage_blob_data_reader" {
 data "archive_file" "function_code" {
   type        = "zip"
   output_path = "${path.module}/function_app.zip"
-
-  source {
-    content  = var.function_code_init
-    filename = "__init__.py"
-  }
-
-  source {
-    content  = var.function_json
-    filename = "function.json"
-  }
-
-  source {
-    content  = var.host_json
-    filename = "../host.json"
-  }
-
-  source {
-    content  = var.requirements_txt
-    filename = "../requirements.txt"
-  }
+  source_dir  = "${path.module}/code"
+  #source {
+  #  content  = file("${path.module}/__init__.py")
+  #  filename = "__init__.py"
+  #}
+  #source {
+  #  content  = file("${path.module}/function.json")
+  #  filename = "function.json"
+  #}
+  #source {
+  #  content  = file("${path.module}/host.json")
+  #  filename = "host.json"
+  #}
+  #source {
+  #  content  = file("${path.module}/requirements.txt")
+  #  filename = "requirements.txt"
+  #}
 }
 
 # Deploy function code (usando null_resource per demo)

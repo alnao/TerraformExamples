@@ -19,6 +19,7 @@ variable "storage_account_name" {
     condition     = can(regex("^[a-z0-9]{3,24}$", var.storage_account_name))
     error_message = "Il nome deve essere lungo 3-24 caratteri e contenere solo lettere minuscole e numeri."
   }
+  default     = "alnaoterraformes03web"
 }
 
 variable "account_tier" {

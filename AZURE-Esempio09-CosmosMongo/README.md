@@ -1,403 +1,158 @@
 # Azure Esempio 09 - CosmosDB con MongoDB API
 
-Questo esempio mostra come creare un database Azure CosmosDB con API MongoDB usando Terraform, includendo configurazioni avanzate per geo-replication, backup, autoscaling e sicurezza.
+Questo esempio mostra come creare un database Azure CosmosDB con API MongoDB usando Terraform.
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
-## Risorse create
+**Risorse create**
+- Resource Group: Gruppo di risorse dedicato
+- Cosmos DB Mongo Cluster: Cluster Cosmos DB for MongoDB vCore (versione 5.0, Free Tier)
+  - **Free tier** attivato di default con gratuiti i limiti di: 400 RU/s + 5GB gratuiti  
+  - La creazione di database e collection MongoDB avviene tramite applicazione client (es. script Python), non via Terraform.
+- Azure Key Vault: Per salvare in modo sicuro connection string, username e password
+- Private Endpoint: (Opzionale) Accesso privato tramite VNet e Private DNS Zone esistenti
+  - Presente un file separato di esempio per la creazione delle VNet e Private zone 
+- Tag: Applicati a tutte le risorse
+- Presenza di uno script python di prova `test.py`
 
-- **Resource Group**: Gruppo di risorse
-- **CosmosDB Account**: Account CosmosDB con API MongoDB
-- **MongoDB Database**: Database MongoDB
-- **MongoDB Collections**: Collections con indexes e sharding
-- **Geo-Replication**: (Opzionale) Replica multi-region
-- **Backup**: Periodic o Continuous backup
-- **Private Endpoint**: (Opzionale) Accesso privato
-- **Diagnostic Settings**: (Opzionale) Logging e monitoring
-
-## Prerequisiti
-
+**Prerequisiti**
 - Azure CLI installato e configurato (`az login`)
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
+- Python3 per lo script di prova
 
-## Caratteristiche
 
-✅ **MongoDB compatibility**: API compatibile con MongoDB 3.6, 4.0, 4.2  
-✅ **Global distribution**: Multi-region attivo-attivo  
-✅ **Consistency levels**: 5 livelli configurabili  
-✅ **Autoscaling**: RU/s automatico  
-✅ **Serverless**: Pay-per-operation (preview)  
-✅ **Backup**: Periodic o Continuous  
-✅ **Analytical storage**: Synapse Link per analytics  
-✅ **Free tier**: 400 RU/s + 5GB gratuiti  
-✅ **Zone redundancy**: Alta disponibilità  
+**Variabili principali**
+- `subscription_id`: ID della subscription Azure
+- `resource_group_name`: Nome del Resource Group
+- `cosmosdb_account_name`: Nome univoco del cluster MongoDB
+- `mongodb_username` / `mongodb_password`: Credenziali amministratore MongoDB
+- `enable_public_network_access`: `"Enabled"` (default) o `"Disabled"`
+- `enable_private_endpoint`: `false` (default, consigliato per test da locale)
+- `enable_key_vault`: `true` (default)
+- `key_vault_name`: Nome Key Vault (univoco globale)
 
-## Utilizzo
+**Output principali**
+- `cosmosdb_mongo_cluster_name`: Nome del cluster MongoDB
+- `cosmosdb_connection_strings`: Connection strings MongoDB (JSON, sensibile)
+- `key_vault_uri`: URI del Key Vault
+- `key_vault_secret_names`: Nomi dei secrets creati (connection string, username, password)
+- `private_endpoint_id` / `private_endpoint_ip`: Info Private Endpoint (se abilitato)
 
-### Inizializzazione
 
-```bash
-terraform init
-```
 
-### Deploy base
+## Comandi
+- Inizializzazione
+  ```bash
+  terraform init
+  terraform plan
+  ```
+- Apply/Deploy base con free tier attivato per default (400 RU/s gratuiti)
+  ```bash
+  terraform apply 
+  ```
+  - Deploy senza free tier 
+    ```bash
+    terraform apply -var="enable_free_tier=false"
+    ```
+ 
+  - Recuperare la connections string
+    ```bash
+    az keyvault secret show \
+      --vault-name alnao-terraform-es9-key \
+      --name cosmosdb-mongodb-connection-string \
+      --query value -o tsv
+    ```
 
-```bash
-terraform apply \
-  -var="cosmosdb_account_name=mycosmos123"
-```
+  - Verifica dello stato del cluster
+    ```
+    az extension add --name cosmosdb-preview
+    az cosmosdb mongocluster list \
+      --resource-group alnao-terraform-esempio09-cosmosmongo
+    ```
 
-### Con free tier (400 RU/s gratuiti)
+  - Aggiunta della regola di rete per *aprire* la porta di cosmos al solo indirizzo IP del chiamante
+    ```
+    MYIP=$(curl -s ifconfig.me)
+    az cosmosdb mongocluster firewall rule create \
+      --cluster-name alnao-terraform-esempio09-cosmosmongo \
+      --resource-group alnao-terraform-esempio09-cosmosmongo \
+      --rule-name AllowMyIP \
+      --start-ip-address $MYIP \
+      --end-ip-address $MYIP
+    ```
+    - Eventuale regola di rete per aprire il cosmos a tutti gli IP (*sconsiagliata*)
+      ```
+      az cosmosdb mongocluster firewall rule create \
+        --cluster-name alnao-terraform-esempio09-cosmosmongo \
+        --resource-group alnao-terraform-esempio09-cosmosmongo \
+        --rule-name AllowAll \
+        --start-ip-address 0.0.0.0 \
+        --end-ip-address 255.255.255.255
+      ```
+  - Esecuzione script di esempio
+    ```
+    python3 test.py
+    ```
+  - Eventuali comandi da eseguire nella console MongoDb, collegandosi da remoto con la "mongo cli" oppure in console web con "Quick start" > "Mongo shell"
+    ```
+    show databases
+    use mydatabase
+    show collections
+    db.annotazioni.find()
+    ```
+- Distruzione (quando necessario)
+    ```bash
+    terraform destroy
+    ```
+  - Comandi per la verifica e rimozione parziale
+      ```bash
+      terraform state list
+      terraform state rm azurerm_cosmosdb_account.main  # Se esiste
+      terraform apply
+      ```
+- Connessione al database
+  - Connection string
+    ```bash
+    # Ottieni connection string
+    terraform output -raw cosmosdb_connection_strings[0]
+    # Formato: mongodb://<name>:<key>@<name>.mongo.cosmos.azure.com:10255/?ssl=true
+    ```
+  - Con mongosh
+    ```bash
+    mongosh "mongodb+srv://<credentials>@alnao-terraform-esempio09-cosmosmongo.mongocluster.cosmos.azure.com/?authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000&appName=CosmosExplorerTerminal"
+    ```
+  - Python
+    ```python
+    from pymongo import MongoClient
+    connection_string = "mongodb://..."
+    client = MongoClient(connection_string)
+    db = client['mydatabase']
+    collection = db['annotazioni']
 
-```bash
-terraform apply \
-  -var="cosmosdb_account_name=mycosmos123" \
-  -var="enable_free_tier=true"
-```
+    # Test inserimento
+    print ("Inserimento di una annotazione di prova...")
+    collection.insert_one({"test": "annotazione di prova"})
 
-### Con autoscaling
-
-```bash
-terraform apply \
-  -var="cosmosdb_account_name=mycosmos123" \
-  -var="enable_autoscale=true" \
-  -var="autoscale_max_throughput=4000"
-```
-
-### Modalità Serverless
-
-```bash
-terraform apply \
-  -var="cosmosdb_account_name=mycosmos123" \
-  -var="enable_serverless=true"
-```
-
-### Con geo-replication
-
-```hcl
-# In terraform.tfvars
-secondary_locations = [
-  {
-    location          = "North Europe"
-    failover_priority = 1
-    zone_redundant    = false
-  },
-  {
-    location          = "East US"
-    failover_priority = 2
-    zone_redundant    = false
-  }
-]
-```
-
-### Multi-master (write in tutte le regioni)
-
-```bash
-terraform apply \
-  -var="cosmosdb_account_name=mycosmos123" \
-  -var="enable_multiple_write_locations=true"
-```
-
-### Collection personalizzata
-
-```hcl
-# In terraform.tfvars
-collections = {
-  "products" = {
-    shard_key  = "categoryId"
-    throughput = 1000
-    indexes = [
-      {
-        keys   = ["_id"]
-        unique = true
-      },
-      {
-        keys   = ["sku"]
-        unique = true
-      },
-      {
-        keys   = ["name", "price"]
-        unique = false
-      }
-    ]
-  }
-  "orders" = {
-    shard_key           = "customerId"
-    enable_autoscale    = true
-    max_throughput      = 4000
-    default_ttl_seconds = 2592000 # 30 giorni
-  }
-}
-```
-
-## Connessione al database
-
-### Connection string
-
-```bash
-# Ottieni connection string
-terraform output -raw cosmosdb_connection_strings
-
-# Formato: mongodb://<name>:<key>@<name>.mongo.cosmos.azure.com:10255/?ssl=true
-```
-
-### Con mongosh
-
-```bash
-mongosh "mongodb://mycosmos123:<PRIMARY_KEY>@mycosmos123.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000"
-```
-
-### Node.js
-
-```javascript
-const { MongoClient } = require('mongodb');
-
-const connectionString = process.env.COSMOS_CONNECTION_STRING;
-const client = new MongoClient(connectionString, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-
-async function run() {
-  await client.connect();
-  const database = client.db('mydb');
-  const collection = database.collection('users');
-  
-  // Insert
-  await collection.insertOne({
-    userId: "user123",
-    name: "Mario Rossi",
-    email: "mario@example.com"
-  });
-  
-  // Find
-  const user = await collection.findOne({ userId: "user123" });
-  console.log(user);
-}
-
-run().catch(console.error);
-```
-
-### Python
-
-```python
-from pymongo import MongoClient
-
-connection_string = "mongodb://..."
-client = MongoClient(connection_string)
-
-db = client.mydb
-collection = db.users
-
-# Insert
-collection.insert_one({
-    "userId": "user123",
-    "name": "Mario Rossi",
-    "email": "mario@example.com"
-})
-
-# Find
-user = collection.find_one({"userId": "user123"})
-print(user)
-```
-
-## Consistency Levels
-
-### Eventual
-- Migliori performance
-- Letture potrebbero non vedere ultime scritture
-- Ideale per: social media, IoT telemetry
-
-### Session (Default)
-- Consistency per sessione
-- Letture vedono proprie scritture
-- Ideale per: web applications
-
-### Consistent Prefix
-- Letture vedono scritture in ordine
-- Nessun gap temporale
-- Ideale per: feed ordinati
-
-### Bounded Staleness
-- Letture max K versioni o T secondi indietro
-- Configurabile
-- Ideale per: scoreboards, stock prices
-
-### Strong
-- Linearizability garantita
-- Performance più basse
-- Ideale per: banking, inventory
-
-## Request Units (RU/s)
-
-Operazioni e costi:
-- **Read 1KB item**: ~1 RU
-- **Write 1KB item**: ~5 RU
-- **Query semplice**: ~3 RU
-- **Query complessa**: ~10-100 RU
-- **Stored procedure**: varia
-
-Esempio calcolo:
-- 1M read/giorno = 12 RU/s (media)
-- 100K write/giorno = 6 RU/s
-- Totale: ~20 RU/s necessari
-
-## Billing Modes
-
-### Provisioned Throughput
-- **Costo**: €0.008/ora per 100 RU/s
-- **Quando**: Carico prevedibile
-- **Storage**: €0.23/GB/mese
-
-### Autoscale
-- **Costo**: €0.012/ora per 100 RU/s (max)
-- **Quando**: Carico variabile
-- **Scale**: 10% di max RU/s al minimo
-
-### Serverless
-- **Costo**: €0.25 per milione di RU
-- **Quando**: Carico sporadico, dev/test
-- **Limiti**: Max 5.000 RU/s, 50GB storage
-
-### Free Tier
-- **400 RU/s gratuiti** (provisioned)
-- **5 GB storage gratuito**
-- **1 account per subscription**
+    print ( "Collezione 'annotazioni':")
+    print(collection.find_one())
+    ```
 
 ## Costi esempio
+- **Free Tier**: 3.000 RU/s e 32 GB inclusi
+- **Provisioned**: Vedi [calcolatore prezzi Cosmos DB](https://azure.microsoft.com/en-us/pricing/details/cosmos-db/)
+  - Provisioned (400 RU/s)
+    - Throughput: 400 RU/s × €0.008/100 × 730h = €23.36
+    - Storage 10 GB: 10 × €0.23 = €2.30
+    - **Totale**: ~€25.66/mese
+  - Serverless (10M RU/mese)
+    - RU: 10 × €0.25 = €2.50
+    - Storage 5 GB: 5 × €0.23 = €1.15
+    - **Totale**: ~€3.65/mese
+  - Multi-region (2 regioni, 400 RU/s)
+    - Throughput: €23.36 × 2 = €46.72
+    - Storage: €2.30 × 2 = €4.60
+    - **Totale**: ~€51.32/mese
 
-### Free Tier
-- 400 RU/s: €0
-- 5 GB storage: €0
-- **Totale**: €0/mese
-
-### Provisioned (400 RU/s)
-- Throughput: 400 RU/s × €0.008/100 × 730h = €23.36
-- Storage 10 GB: 10 × €0.23 = €2.30
-- **Totale**: ~€25.66/mese
-
-### Serverless (10M RU/mese)
-- RU: 10 × €0.25 = €2.50
-- Storage 5 GB: 5 × €0.23 = €1.15
-- **Totale**: ~€3.65/mese
-
-### Multi-region (2 regioni, 400 RU/s)
-- Throughput: €23.36 × 2 = €46.72
-- Storage: €2.30 × 2 = €4.60
-- **Totale**: ~€51.32/mese
-
-## Backup e Recovery
-
-### Periodic Backup
-- Intervallo: 1-24 ore
-- Retention: 8-720 ore (30 giorni)
-- Storage: Geo, Local, Zone redundant
-- Restore: Richiede support ticket
-
-### Continuous Backup
-- Point-in-time restore
-- Retention: 7-30 giorni
-- Self-service restore
-- Costo: +20% del throughput
-
-```bash
-# Restore con Azure CLI
-az cosmosdb mongodb database restore \
-  --account-name mycosmos123 \
-  --name mydb \
-  --resource-group rg-cosmos-example \
-  --restore-timestamp "2025-10-26T12:00:00Z"
-```
-
-## Sharding Best Practices
-
-Shard key ideale:
-1. **Alta cardinalità**: Molti valori unici
-2. **Distribuzione uniforme**: Evitare hot partitions
-3. **Usato in query**: Filtri efficienti
-4. **Immutabile**: Non cambia nel tempo
-
-Esempi:
-- ✅ `userId`, `customerId`, `orderId`
-- ✅ `categoryId` + alto livello di varietà
-- ❌ `status` (pochi valori)
-- ❌ `createdDate` (concentrazione temporale)
-
-## Indexes
-
-CosmosDB indicizza automaticamente tutti i campi. Puoi personalizzare:
-
-```javascript
-// Index policy personalizzata
-{
-  "indexingMode": "consistent",
-  "automatic": true,
-  "includedPaths": [
-    { "path": "/name/*" },
-    { "path": "/email/*" }
-  ],
-  "excludedPaths": [
-    { "path": "/description/*" }
-  ]
-}
-```
-
-## Performance Tips
-
-1. **Shard key corretto**: Distribuzione uniforme
-2. **Indexes ottimizzati**: Solo necessari
-3. **Batch operations**: Usare bulkWrite
-4. **Connection pooling**: Riutilizzare connessioni
-5. **Nearby region**: Client vicini al database
-6. **Consistency appropriato**: Session per web apps
-7. **Cross-partition queries**: Minimizzare
-
-## Output
-
-- `resource_group_name`: Nome Resource Group
-- `cosmosdb_account_id`: ID account CosmosDB
-- `cosmosdb_account_name`: Nome account
-- `cosmosdb_endpoint`: Endpoint HTTPS
-- `cosmosdb_connection_strings`: Connection strings MongoDB (sensibile)
-- `cosmosdb_primary_key`: Primary key (sensibile)
-- `database_name`: Nome database
-- `collection_names`: Lista collections
-- `read_endpoints`: Read endpoints per region
-- `write_endpoints`: Write endpoints per region
-
-## Troubleshooting
-
-### Request rate too large (429)
-- Aumentare RU/s
-- Abilitare autoscale
-- Ottimizzare query
-- Ridurre indexes non necessari
-
-### Slow queries
-- Controllare query pattern
-- Verificare shard key nelle query
-- Controllare index usage
-- Usare diagnostic logs
-
-### High costs
-- Monitorare RU consumption
-- Ottimizzare indexes
-- Considerare serverless
-- Rivedere consistency level
-
-### Connection timeout
-- Verificare firewall rules
-- Controllare IP range filter
-- Verificare virtual network rules
-- Aumentare connection timeout in client
-
-## Limitazioni
-
-- Max 100 collections per database (serverless)
-- Max document size: 2 MB
-- Max RU/s per partition: 10.000 RU/s
-- Serverless max: 5.000 RU/s, 50 GB
-- Max regions: 30
-- Alcuni MongoDB features non supportati (vedi docs)
 
 ## Differenze con DynamoDB
 
@@ -411,15 +166,6 @@ CosmosDB indicizza automaticamente tutti i campi. Puoi personalizzare:
 | Geo-distribution | Active-Active | Active-Active |
 | Max item size | 2 MB | 400 KB |
 
-## Security Best Practices
-
-1. **RBAC**: Usare Azure AD per autenticazione
-2. **Keys rotation**: Rotare primary/secondary keys
-3. **Private endpoint**: Per accesso interno
-4. **IP firewall**: Limitare IP pubblici
-5. **Encryption**: Sempre abilitata at-rest
-6. **TLS**: Sempre SSL/TLS in connessioni
-7. **Monitoring**: Abilitare diagnostic logs
 
 ## Riferimenti
 
@@ -427,3 +173,33 @@ CosmosDB indicizza automaticamente tutti i campi. Puoi personalizzare:
 - [MongoDB API Docs](https://docs.microsoft.com/azure/cosmos-db/mongodb/introduction)
 - [Pricing Calculator](https://azure.microsoft.com/pricing/details/cosmos-db/)
 - [Capacity Planner](https://cosmos.azure.com/capacitycalculator/)
+- [Terraform AzureRM Provider - azurerm_mongo_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mongo_cluster)
+- [Azure Cosmos DB for MongoDB vCore](https://learn.microsoft.com/azure/cosmos-db/mongodb/vcore/)
+- [Azure Key Vault](https://learn.microsoft.com/azure/key-vault/general/overview)
+
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
+
+## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
+Public projects 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
+*Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
+
+
+

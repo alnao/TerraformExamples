@@ -1,0 +1,53 @@
+# ===================================================================================
+# CONFIGURAZIONE ESEMPIO - Cosmos DB MongoDB
+# ===================================================================================
+# Copia questo file in terraform.tfvars e modifica i valori
+
+# Azure Subscription
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Resource Group
+# resource_group_name = "alnao-terraform-esempio09-cosmosmongo"
+# location           = "westeurope"
+
+# Cosmos DB Mongo Cluster (nome deve essere univoco globalmente)
+# cosmosdb_account_name = "alnao-cosmosdb-mongo-123"
+
+# MongoDB Credentials
+# mongodb_username = "adminuser"
+# mongodb_password = "YourSecurePassword123!"  # ⚠️ IMPORTANTE: Cambia questa password!
+
+# Network Configuration
+# enable_public_network_access = "Enabled"  # "Enabled" o "Disabled"
+
+# ===================================================================================
+# Private Endpoint Configuration (OPZIONALE)
+# ===================================================================================
+# Decommentare e configurare solo se si vuole usare Private Endpoint
+# Richiede risorse di rete esistenti: VNet, Subnet e Private DNS Zone
+
+enable_private_endpoint = false
+
+# Se enable_private_endpoint = true, configurare i seguenti parametri:
+# private_endpoint_subnet_name  = "subnet-private-endpoint"
+# virtual_network_name          = "vnet-example"
+# network_resource_group_name   = "rg-network"
+# private_dns_zone_name         = "privatelink.mongocluster.cosmos.azure.com"
+# dns_resource_group_name       = "rg-dns"
+
+# ===================================================================================
+# Azure Key Vault Configuration (OPZIONALE)
+# ===================================================================================
+# Abilita la creazione di un Key Vault per salvare i secrets in modo sicuro
+# (connection string, username, password)
+
+# enable_key_vault = true
+# key_vault_name   = "alnao-terraform-es9-key"  # Deve essere univoco globalmente (3-24 caratteri)
+
+# Tags
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio09CosmosMongo"
+  CreatedBy   = "Terraform"
+}

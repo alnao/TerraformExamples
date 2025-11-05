@@ -2,6 +2,9 @@
 .terraform/
 .terraform.lock.hcl
 
+lambda_*.zip
+function_*.zip
+
 # .tfstate files
 *.tfstate
 *.tfstate.*
