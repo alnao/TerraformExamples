@@ -30,7 +30,7 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 - `frontdoor_name`: Nome del Front Door profile (default: afd-esempio04)
 - `frontdoor_sku`: SKU (Standard_AzureFrontDoor o Premium_AzureFrontDoor)
 - `enable_waf`: Abilita WAF (solo Premium, default: false)
-- `enable_caching`: Abilita caching (default: true)
+- `enable_caching`: Abilita caching (default: false)
 - `https_redirect_enabled`: Redirect HTTP→HTTPS (default: true)
 
 **Costi stimati** (West Europe)
@@ -85,7 +85,16 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 
     # Oppure in region diversa
     terraform apply -var="location=eastus"
+
+    # In caso di errore 404 file not found lanciare il comando
+    az afd endpoint purge --resource-group alnao-terraform-esempio04-frontdoor \
+    --profile-name afd-esempio04 \
+    --endpoint-name afd-esempio04-endpoint \
+    --content-paths "/index.html" "/css/*"
     
+    # Verifica con CURL
+    curl -I https://$(terraform output -raw origin_hostname)
+
     # Visualizza l'URL Front Door
     terraform output frontdoor_url
     # Output: https://afd-esempio04-endpoint-xxx.azurefd.net
@@ -167,6 +176,31 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
       --origin-group-name afd-esempio04-origin-group \
       --origin-name afd-esempio04-origin \
       --resource-group alnao-terraform-esempio04-frontdoor
+
+    # Testare endpoint
+    curl -I https://afd-esempio04-endpoint-fxg3hwf3ewhacuer.z03.azurefd.net/
+    
+    # Verifica anche con il browser o con curl completo
+    curl https://afd-esempio04-endpoint-fxg3hwf3ewhacuer.z03.azurefd.net/
+
+    # Purge di percorsi specifici
+    az afd endpoint purge --resource-group alnao-terraform-esempio04-frontdoor \
+      --profile-name afd-esempio04 \
+      --endpoint-name afd-esempio04-endpoint \
+      --content-paths "/index.html" "/css/*"
+
+    # Verifica lo stato del deployment
+    az afd profile show --name afd-esempio04 \
+      --resource-group alnao-terraform-esempio04-frontdoor \
+      --query deploymentStatus
+
+    # Verifica lo stato della origin
+    az afd origin show --resource-group alnao-terraform-esempio04-frontdoor \
+      --profile-name afd-esempio04 \
+      --origin-group-name afd-esempio04-origin-group \
+      --origin-name afd-esempio04-origin \
+      --query healthCheckStatus
+
     ```
 - Distruzione
     ```bash
@@ -301,132 +335,124 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 
 
 
-## Security Best Practices
-1. **Sempre Premium in produzione** per avere WAF integrato
-2. **HTTPS only**: Abilitare `https_redirect_enabled = true` (già di default)
-3. **TLS 1.2+**: Usare `minimum_tls_version = "TLS12"` (già di default)
-4. **Managed rules**: Abilitare Default Rule Set e Bot Manager (Premium)
-5. **Rate limiting**: Configurare custom rules per limitare richieste
-6. **Private origin**: Usare Private Link per connessioni sicure (Premium)
-7. **Geo-filtering**: Limitare paesi se necessario
-8. **Monitoring**: Abilitare diagnostic settings per analisi
+- **Security Best Practices**
+  1. **Sempre Premium in produzione** per avere WAF integrato
+  2. **HTTPS only**: Abilitare `https_redirect_enabled = true` (già di default)
+  3. **TLS 1.2+**: Usare `minimum_tls_version = "TLS12"` (già di default)
+  4. **Managed rules**: Abilitare Default Rule Set e Bot Manager (Premium)
+  5. **Rate limiting**: Configurare custom rules per limitare richieste
+  6. **Private origin**: Usare Private Link per connessioni sicure (Premium)
+  7. **Geo-filtering**: Limitare paesi se necessario
+  8. **Monitoring**: Abilitare diagnostic settings per analisi
 
-## Monitoring e Diagnostics
-- **Metriche disponibili in Front Door**:
-    - Access Logs: Tutte le richieste HTTP
-    - Health Probe Logs: Status degli health checks
-    - WAF Logs: Richieste bloccate/permesse (Premium)
-    - Metrics: Latency, request count, error rates
+- **Monitoring e Diagnostics**
+  - **Metriche disponibili in Front Door**:
+      - Access Logs: Tutte le richieste HTTP
+      - Health Probe Logs: Status degli health checks
+      - WAF Logs: Richieste bloccate/permesse (Premium)
+      - Metrics: Latency, request count, error rates
 
-- **Query KQL esempio**:
-    ```kusto
-    AzureDiagnostics
-    | where Category == "FrontDoorAccessLog"
-    | where TimeGenerated > ago(1h)
-    | summarize count() by httpStatusCode_s
-    | order by count_ desc
-    ```
+  - **Query KQL esempio**:
+      ```kusto
+      AzureDiagnostics
+      | where Category == "FrontDoorAccessLog"
+      | where TimeGenerated > ago(1h)
+      | summarize count() by httpStatusCode_s
+      | order by count_ desc
+      ```
 
-- **Comandi per verifica logs**:
-    ```bash
-    # Lista degli access logs
-    az monitor diagnostic-settings show \
-      --name afd-esempio04-diagnostics \
-      --resource /subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Cdn/profiles/afd-esempio04
-    
-    # Query logs da Log Analytics
-    az monitor log-analytics query \
-      --workspace YOUR_WORKSPACE_ID \
-      --analytics-query "AzureDiagnostics | where Category == 'FrontDoorAccessLog' | take 10"
-    ```
+  - **Comandi per verifica logs**:
+      ```bash
+      # Lista degli access logs
+      az monitor diagnostic-settings show \
+        --name afd-esempio04-diagnostics \
+        --resource /subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Cdn/profiles/afd-esempio04
+      
+      # Query logs da Log Analytics
+      az monitor log-analytics query \
+        --workspace YOUR_WORKSPACE_ID \
+        --analytics-query "AzureDiagnostics | where Category == 'FrontDoorAccessLog' | take 10"
+      ```
 
-
-## Troubleshooting
-### Endpoint non raggiungibile
-- **Causa**: Provisioning in corso o origin offline
-- **Soluzioni**:
-  - Attendere provisioning (può richiedere 10-15 minuti)
-  - Verificare che origin sia online:
-    ```bash
-    curl -I https://$(terraform output -raw origin_hostname)
-    ```
-  - Controllare health probe status:
-    ```bash
-    az afd origin show \
-      --profile-name afd-esempio04 \
-      --origin-group-name afd-esempio04-origin-group \
-      --origin-name afd-esempio04-origin \
-      --resource-group alnao-terraform-esempio04-frontdoor \
-      --query "healthProbeSettings"
-    ```
-
-### Custom domain non funziona
-- **Causa**: DNS non configurato o certificato in provisioning
-- **Soluzioni**:
-  - Verificare configurazione DNS (deve puntare all'endpoint Front Door)
-  - Attendere propagazione DNS (fino a 48 ore)
-  - Verificare certificato SSL (generazione automatica può richiedere tempo):
-    ```bash
-    az afd custom-domain show \
-      --profile-name afd-esempio04 \
-      --custom-domain-name www-example-com \
-      --resource-group alnao-terraform-esempio04-frontdoor
-    ```
-
-### WAF blocca traffico legittimo
-- **Causa**: Regole troppo restrittive
-- **Soluzioni**:
-  - Controllare WAF logs per identificare la regola che blocca:
-    ```bash
-    az monitor log-analytics query \
-      --workspace YOUR_WORKSPACE_ID \
-      --analytics-query "AzureDiagnostics | where Category == 'FrontDoorWebApplicationFirewallLog' | where action_s == 'Block'"
-    ```
-  - Mettere in Detection mode temporaneamente (`waf_mode = "Detection"`)
-  - Creare exception rules se necessario
-  - Disabilitare regole specifiche se causano falsi positivi
-
-### Costi elevati inaspettati
-- **Causa**: Troppo data transfer o richieste
-- **Soluzioni**:
-  - Verificare data transfer con metriche Azure
-  - Ottimizzare caching per ridurre richieste all'origin
-  - Considerare Standard SKU se WAF non è necessario
-  - Monitorare bot traffic (potrebbe essere necessario bloccare bot malevoli)
-  - Verificare compressione sia abilitata:
-    ```bash
-    az afd route show \
-      --profile-name afd-esempio04 \
-      --endpoint-name afd-esempio04-endpoint \
-      --route-name afd-esempio04-route \
-      --resource-group alnao-terraform-esempio04-frontdoor
-    ```
-
-### Cache non funziona correttamente
-- **Causa**: Configurazione cache errata o headers dall'origin
-- **Soluzioni**:
-  - Verificare che `enable_caching = true`
-  - Controllare cache-control headers dall'origin
-  - Purgare cache manualmente per test
-  - Verificare regole di caching nel rule set
-
-### 404 o 502 errors
-- **Causa**: Origin non raggiungibile o misconfigured
-- **Soluzioni**:
-  - Verificare che storage account abbia static website abilitato
-  - Controllare che i file esistano nel container $web
-  - Verificare configurazione origin (hostname, protocol)
-  - Testare direttamente l'origin bypassando Front Door
-
-
-## Migrare da Azure CDN Standard a Front Door
-- Azure sta deprecando il vecchio Azure CDN a favore di Front Door:
-    1. Front Door è la versione moderna e raccomandata
-    2. Migliori performance (Anycast routing)
-    3. Migliore integrazione con altri servizi Azure
-    4. WAF nativo (Premium SKU)
-    5. Gestione più semplice e intuitiva
-    6. Health probes nativi senza configurazioni complesse
+- Troubleshooting
+  - Endpoint non raggiungibile
+    - **Causa**: Provisioning in corso o origin offline
+    - **Soluzioni**:
+      - Attendere provisioning (può richiedere 10-15 minuti)
+      - Verificare che origin sia online:
+        ```bash
+        curl -I https://$(terraform output -raw origin_hostname)
+        ```
+      - Controllare health probe status:
+        ```bash
+        az afd origin show \
+          --profile-name afd-esempio04 \
+          --origin-group-name afd-esempio04-origin-group \
+          --origin-name afd-esempio04-origin \
+          --resource-group alnao-terraform-esempio04-frontdoor \
+          --query "healthProbeSettings"
+        ```
+  - Custom domain non funziona
+    - **Causa**: DNS non configurato o certificato in provisioning
+    - **Soluzioni**:
+      - Verificare configurazione DNS (deve puntare all'endpoint Front Door)
+      - Attendere propagazione DNS (fino a 48 ore)
+      - Verificare certificato SSL (generazione automatica può richiedere tempo):
+        ```bash
+        az afd custom-domain show \
+          --profile-name afd-esempio04 \
+          --custom-domain-name www-example-com \
+          --resource-group alnao-terraform-esempio04-frontdoor
+        ```
+  - WAF blocca traffico legittimo
+    - **Causa**: Regole troppo restrittive
+    - **Soluzioni**:
+      - Controllare WAF logs per identificare la regola che blocca:
+        ```bash
+        az monitor log-analytics query \
+          --workspace YOUR_WORKSPACE_ID \
+          --analytics-query "AzureDiagnostics | where Category == 'FrontDoorWebApplicationFirewallLog' | where action_s == 'Block'"
+        ```
+      - Mettere in Detection mode temporaneamente (`waf_mode = "Detection"`)
+      - Creare exception rules se necessario
+      - Disabilitare regole specifiche se causano falsi positivi
+  - Costi elevati inaspettati
+    - **Causa**: Troppo data transfer o richieste
+    - **Soluzioni**:
+      - Verificare data transfer con metriche Azure
+      - Ottimizzare caching per ridurre richieste all'origin
+      - Considerare Standard SKU se WAF non è necessario
+      - Monitorare bot traffic (potrebbe essere necessario bloccare bot malevoli)
+      - Verificare compressione sia abilitata:
+        ```bash
+        az afd route show \
+          --profile-name afd-esempio04 \
+          --endpoint-name afd-esempio04-endpoint \
+          --route-name afd-esempio04-route \
+          --resource-group alnao-terraform-esempio04-frontdoor
+        ```
+  - Cache non funziona correttamente
+    - **Causa**: Configurazione cache errata o headers dall'origin
+    - **Soluzioni**:
+      - Verificare che `enable_caching = true`
+      - Controllare cache-control headers dall'origin
+      - Purgare cache manualmente per test
+      - Verificare regole di caching nel rule set
+  - 404 o 502 errors
+    - **Causa**: Origin non raggiungibile o misconfigured
+    - **Soluzioni**:
+      - Verificare che storage account abbia static website abilitato
+      - Controllare che i file esistano nel container $web
+      - Verificare configurazione origin (hostname, protocol)
+      - Testare direttamente l'origin bypassando Front Door
+  - Migrare da Azure CDN Standard a Front Door
+    - Azure sta deprecando il vecchio Azure CDN a favore di Front Door:
+        1. Front Door è la versione moderna e raccomandata
+        2. Migliori performance (Anycast routing)
+        3. Migliore integrazione con altri servizi Azure
+        4. WAF nativo (Premium SKU)
+        5. Gestione più semplice e intuitiva
+        6. Health probes nativi senza configurazioni complesse
 
 
 ## Riferimenti

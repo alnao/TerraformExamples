@@ -93,7 +93,7 @@ variable "health_probe_path" {
 variable "enable_caching" {
   description = "Abilita caching"
   type        = bool
-  default     = true
+  default     = false # ex true --- IGNORE ---
 }
 
 variable "enable_compression" {

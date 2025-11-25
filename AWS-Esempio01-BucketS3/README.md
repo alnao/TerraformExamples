@@ -3,15 +3,14 @@
 Questo modulo Terraform crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e molte opzioni configurabili.
 - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
-## Variabili principali
+**Variabili principali**
 - `region`: Regione AWS (default: eu-central-1)
 - `bucket_name`: Nome del bucket S3
 - `tags`: Mappa di tag da applicare
 - `versioning_enabled`: Abilita versioning (default: true)
 - `force_destroy`: Cancella bucket anche se non vuoto
 
-
-## Esempio di utilizzo
+**Esempio di utilizzo**
 ```hcl
 module "bucket" {
   source              = "./Esempio01BucketS3"
@@ -27,8 +26,7 @@ module "bucket" {
 }
 ```
 
-## Comandi principali
-
+**Comandi principali**
 1. Inizializza la cartella:
    ```bash
    terraform init
@@ -46,7 +44,7 @@ module "bucket" {
    terraform destroy
    ```
 
-## Note
+**Note**
 - Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio01bucketS3/terraform.tfstate`.
 - Modifica le variabili nel file `variables.tf` o tramite CLI/TFVARS per personalizzare il comportamento.
 

@@ -83,9 +83,9 @@ resource "azurerm_cdn_frontdoor_origin_group" "main" {
   }
 
   health_probe {
-    protocol            = "Https"
+    protocol            = "Http"
     interval_in_seconds = var.health_probe_interval
-    request_type        = "HEAD"
+    request_type        = "GET"
     path                = var.health_probe_path
   }
 }
@@ -96,7 +96,7 @@ resource "azurerm_cdn_frontdoor_origin" "main" {
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.main.id
   enabled                       = true
 
-  certificate_name_check_enabled = true
+  certificate_name_check_enabled = false
   host_name                      = azurerm_storage_account.origin.primary_web_host
   http_port                      = 80
   https_port                     = 443
@@ -114,12 +114,14 @@ resource "azurerm_cdn_frontdoor_route" "main" {
   
   supported_protocols    = var.supported_protocols
   patterns_to_match      = ["/*"]
-  forwarding_protocol    = "HttpsOnly"
+  forwarding_protocol    = "MatchRequest"
   link_to_default_domain = true
   https_redirect_enabled = var.https_redirect_enabled
 
   # Cache configuration
   cdn_frontdoor_rule_set_ids = var.enable_caching ? [azurerm_cdn_frontdoor_rule_set.caching[0].id] : []
+  
+  depends_on = [azurerm_cdn_frontdoor_origin.main]
 }
 
 # Rule Set per caching (opzionale)
@@ -129,10 +131,10 @@ resource "azurerm_cdn_frontdoor_rule_set" "caching" {
   cdn_frontdoor_profile_id     = azurerm_cdn_frontdoor_profile.main.id
 }
 
-# Rule per file statici
-resource "azurerm_cdn_frontdoor_rule" "static_files" {
+# Rule per file statici (Gruppo 1 - Code/Fonts)
+resource "azurerm_cdn_frontdoor_rule" "static_files_1" {
   count                         = var.enable_caching ? 1 : 0
-  name                          = "StaticFilesCaching"
+  name                          = "StaticFilesCaching1"
   cdn_frontdoor_rule_set_id     = azurerm_cdn_frontdoor_rule_set.caching[0].id
   order                         = 1
   behavior_on_match             = "Continue"
@@ -140,7 +142,33 @@ resource "azurerm_cdn_frontdoor_rule" "static_files" {
   conditions {
     url_file_extension_condition {
       operator         = "Equal"
-      match_values     = ["css", "js", "jpg", "jpeg", "png", "gif", "svg", "woff", "woff2", "ttf", "eot", "ico"]
+      match_values     = ["css", "js", "woff", "woff2", "ttf", "eot"]
+      transforms       = ["Lowercase"]
+    }
+  }
+
+  actions {
+    route_configuration_override_action {
+      cache_behavior                = "OverrideAlways"
+      cache_duration                = var.static_files_cache_duration
+      compression_enabled           = var.enable_compression
+      query_string_caching_behavior = "IgnoreQueryString"
+    }
+  }
+}
+
+# Rule per file statici (Gruppo 2 - Images)
+resource "azurerm_cdn_frontdoor_rule" "static_files_2" {
+  count                         = var.enable_caching ? 1 : 0
+  name                          = "StaticFilesCaching2"
+  cdn_frontdoor_rule_set_id     = azurerm_cdn_frontdoor_rule_set.caching[0].id
+  order                         = 2
+  behavior_on_match             = "Continue"
+
+  conditions {
+    url_file_extension_condition {
+      operator         = "Equal"
+      match_values     = ["jpg", "jpeg", "png", "gif", "svg", "ico"]
       transforms       = ["Lowercase"]
     }
   }
