@@ -49,97 +49,105 @@ Questo esempio mostra come creare una Azure Function con Terraform che lista i b
   ```
 
 ## Comandi
-- Inizializzazione
+- Script di rilascio del terraform e del codice della Function
   ```bash
-  terraform init
-  terraform plan
-  terraform apply
+  ./deploy-all.sh
   ```
-  - Deploy con parametri 
+  - Oppure inizializzazione del terraform
     ```bash
-    terraform apply \
-      -var="storage_account_name=stfuncunique123" \
-      -var="test_storage_account_name=sttestunique123" \
-      -var="function_app_name=func-blob-list-unique"
+    terraform init
+    terraform plan
+    terraform apply
     ```
-- Deploy del codice Function
-  ```bash
-  # Ottieni comando di deploy
-  DEPLOY_CMD=$(terraform output -raw deploy_command)
-
-  # Esegui deploy
-  echo $DEPLOY_CMD
-  eval $DEPLOY_CMD
-
-  # Oppure eseguire il comando manualmente
-  az functionapp deployment source config-zip \
-    -g alnao-terraform-esempio05-functions \
-    -n func-blob-list-05 \
-    --src function_app.zip
-  ```
-- Ottieni Function Key
-  ```bash
-  # List function keys
-  az functionapp function keys list \
-    -g alnao-terraform-esempio05-functions \
-    -n func-blob-list-05 \
-    --function-name list-blobs
-
-  # Get default host key
-  FUNCTION_KEY=$(az functionapp keys list \
-    -g alnao-terraform-esempio05-functions \
-    -n func-blob-list-05 \
-    --query "functionKeys.default" -o tsv)
-
-  echo $FUNCTION_KEY
-  ```
-- Test della Function
-  1. Via HTTP
+    - Deploy del terraform con parametri 
+      ```bash
+      terraform apply \
+        -var="storage_account_name=stfuncunique123" \
+        -var="test_storage_account_name=sttestunique123" \
+        -var="function_app_name=func-blob-list-unique"
+      ```
+  - Deploy del codice Function *senza questo deploy non funziona*
+    - Terraform non può (e non deve) orchestrare lo step di build remoto perché richiederebbe di pilotare il servizio SCM, mantenere credenziali e gestire cicli di deploy: sono responsabilità da pipeline/delivery tool (Azure CLI, GitHub Actions, DevOps). Perciò la sequenza corretta è: Terraform per infrastruttura + Azure CLI/CI per il deploy zip con `--build-remote` true.
     ```bash
-    # Ottieni hostname
-    HOSTNAME=$(terraform output -raw function_app_hostname)
+    # Ottieni comando di deploy
+    DEPLOY_CMD=$(terraform output -raw deploy_command)
 
-    # Get function key (come sopra)
+    # Esegui deploy
+    echo $DEPLOY_CMD
+    eval $DEPLOY_CMD
+
+    # Oppure eseguire il comando di deploy del codice della funzione manualmente
+    az functionapp deployment source config-zip \
+      -g alnao-terraform-esempio05-functions \
+      -n  alnao-terraform-esempio05-functions \
+      --src function_app.zip \
+      --build-remote true
+    ```
+  - Ottieni Function Key
+    ```bash
+    # List function keys
+    az functionapp function keys list \
+      -g alnao-terraform-esempio05-functions \
+      -n  alnao-terraform-esempio05-functions \
+      --function-name list-blobs
+
+    # Get default host key
     FUNCTION_KEY=$(az functionapp keys list \
       -g alnao-terraform-esempio05-functions \
-      -n func-blob-list-05 \
+      -n  alnao-terraform-esempio05-functions \
       --query "functionKeys.default" -o tsv)
 
-    # Test senza path
-    curl "https://$HOSTNAME/api/list-blobs" \
-      -H "x-functions-key: $FUNCTION_KEY"
-
-    # Test con path specifico
-    curl "https://$HOSTNAME/api/list-blobs?path=test/" \
-      -H "x-functions-key: $FUNCTION_KEY"
+    echo $FUNCTION_KEY
     ```
-  2. Upload blob di test
+  - Test della Function
+    1. Via HTTP
+      ```bash
+      # Ottieni hostname
+      HOSTNAME=$(terraform output -raw function_app_hostname)
+      echo $HOSTNAME
 
-    ```bash
-    # Ottieni storage account e container
-    STORAGE_ACCOUNT=$(terraform output -raw test_storage_account_name)
-    CONTAINER=$(terraform output -raw test_container_name)
+      # Get function key (come sopra)
+      FUNCTION_KEY=$(az functionapp keys list \
+        -g alnao-terraform-esempio05-functions \
+        -n  alnao-terraform-esempio05-functions \
+        --query "functionKeys.default" -o tsv)
 
-    # Crea file di test
-    echo "Test file 1" > /tmp/test1.txt
-    echo "Test file 2" > /tmp/test2.txt
+      # Test senza path
+      curl "https://$HOSTNAME/api/list-blobs" \
+        -H "x-functions-key: $FUNCTION_KEY"
 
-    # Upload blob
-    az storage blob upload \
-      -f /tmp/test1.txt \
-      -c $CONTAINER \
-      -n test/test1.txt \
-      --account-name $STORAGE_ACCOUNT
+      # Test con path specifico
+      curl "https://$HOSTNAME/api/list-blobs?path=test/" \
+        -H "x-functions-key: $FUNCTION_KEY"
+      ```
+    2. Upload blob di test
 
-    az storage blob upload \
-      -f /tmp/test2.txt \
-      -c $CONTAINER \
-      -n test/subfolder/test2.txt \
-      --account-name $STORAGE_ACCOUNT
+      ```bash
+      # Ottieni storage account e container
+      STORAGE_ACCOUNT=$(terraform output -raw test_storage_account_name)
+      CONTAINER=$(terraform output -raw test_container_name)
 
-    # Test function
-    curl "https://$HOSTNAME/api/list-blobs?path=test/" -H "x-functions-key: $FUNCTION_KEY"
-    ```
+      # Crea file di test
+      echo "Test file 1" > /tmp/test1.txt
+      echo "Test file 2" > /tmp/test2.txt
+
+      # Upload blob
+      az storage blob upload \
+        -f /tmp/test1.txt \
+        -c $CONTAINER \
+        -n test1.txt \
+        --account-name $STORAGE_ACCOUNT
+
+      az storage blob upload \
+        -f /tmp/test2.txt \
+        -c $CONTAINER \
+        -n test/subfolder/test2.txt \
+        --account-name $STORAGE_ACCOUNT
+
+      # Test function
+      curl "https://$HOSTNAME/api/list-blobs" -H "x-functions-key: $FUNCTION_KEY"
+      curl "https://$HOSTNAME/api/list-blobs?path=test/" -H "x-functions-key: $FUNCTION_KEY"
+      ```
 - Con Piano Premium
   Per production con Always On e VNet integration:
   ```bash
@@ -172,6 +180,11 @@ Questo esempio mostra come creare una Azure Function con Terraform che lista i b
       -var="response_time_alert_threshold=5" \
       -var="action_group_id=$ACTION_GROUP_ID"
     ```
+- Rimozione di tutte le risorse terraform
+  ```bash
+  terraform destroy
+  ```
+
 ## Monitoring
 
 ### Application Insights
@@ -212,55 +225,47 @@ az webapp log download \
 ```
 
 ## Service Plans
-
-### Consumption Plan (Y1)
-- **Pricing**: Pay per execution
-- **Auto-scaling**: Automatico
-- **Timeout**: 5 minuti (default), 10 max
-- **Memory**: 1.5 GB
-- **Instances**: Max 200
-- **Always On**: Non disponibile
-
-### Premium Plan (P1V2)
-- **Pricing**: Fisso + pay per execution
-- **Pre-warmed instances**: Disponibili
-- **Timeout**: 30 minuti (default), illimitato
-- **Memory**: 3.5 GB
-- **VNet integration**: Disponibile
-- **Always On**: Disponibile
-
-### Dedicated Plan (B1, S1, P1V3)
-- **Pricing**: Fisso per VM
-- **Condivisione**: Con App Service
-- **Timeout**: 30 minuti (default), illimitato
-- **Always On**: Disponibile
+- **Consumption Plan (Y1)**
+  - **Pricing**: Pay per execution
+  - **Auto-scaling**: Automatico
+  - **Timeout**: 5 minuti (default), 10 max
+  - **Memory**: 1.5 GB
+  - **Instances**: Max 200
+  - **Always On**: Non disponibile
+- **Premium Plan (P1V2)**
+  - **Pricing**: Fisso + pay per execution
+  - **Pre-warmed instances**: Disponibili
+  - **Timeout**: 30 minuti (default), illimitato
+  - **Memory**: 3.5 GB
+  - **VNet integration**: Disponibile
+  - **Always On**: Disponibile
+- **Dedicated Plan (B1, S1, P1V3)**
+  - **Pricing**: Fisso per VM
+  - **Condivisione**: Con App Service
+  - **Timeout**: 30 minuti (default), illimitato
+  - **Always On**: Disponibile
 
 ## Costi
-
-### Consumption Plan (Y1)
-- **Executions**: €0.169 per milione
-- **Execution time**: €0.000014/GB-s
-- **Free grant**: 
-  - 1M executions/mese
-  - 400.000 GB-s/mese
-  
-### Esempio (1M req/mese, 512MB, 1s avg)
-- Executions: (1M - 1M free) = €0
-- GB-s: (1M × 1s × 0.5GB - 400K) = 100K × €0.000014 = €1.40
-- **Totale**: ~€1.40/mese
-
-### Premium P1V2
-- ~€134/mese (1 instance)
-- Includes 1M executions gratis
-
-### Storage costs
-- General Purpose v2: €0.018/GB/mese
-- Operations: €0.004/10K
-- 10 GB + 100K ops = ~€0.22/mese
-
-### Application Insights
-- Data ingestion: €2.30/GB dopo 5GB gratis
-- ~1-2 GB/mese per function attiva = ~€0-2/mese
+- **Consumption Plan (Y1)**
+  - **Executions**: €0.169 per milione
+  - **Execution time**: €0.000014/GB-s
+  - **Free grant**: 
+    - 1M executions/mese
+    - 400.000 GB-s/mese
+- **Esempio (1M req/mese, 512MB, 1s avg)**
+  - Executions: (1M - 1M free) = €0
+  - GB-s: (1M × 1s × 0.5GB - 400K) = 100K × €0.000014 = €1.40
+  - **Totale**: ~€1.40/mese
+- **Premium P1V2**
+  - ~€134/mese (1 instance)
+  - Includes 1M executions gratis
+- **Storage costs**
+  - General Purpose v2: €0.018/GB/mese
+  - Operations: €0.004/10K
+  - 10 GB + 100K ops = ~€0.22/mese
+- **Application Insights**
+  - Data ingestion: €2.30/GB dopo 5GB gratis
+  - ~1-2 GB/mese per function attiva = ~€0-2/mese
 
 ## Best Practices
 
@@ -275,94 +280,6 @@ az webapp log download \
 9. **Deployment slots**: Per blue-green deployment
 10. **VNet integration**: Per risorse private
 
-## Python Function Structure
-
-### Directory structure
-```
-FunctionApp/
-├── host.json
-├── requirements.txt
-├── list-blobs/
-│   ├── __init__.py
-│   └── function.json
-└── other-function/
-    ├── __init__.py
-    └── function.json
-```
-
-### Trigger types
-- **HTTP**: API REST
-- **Timer**: Scheduled jobs (cron)
-- **Blob**: Quando blob viene creato/modificato
-- **Queue**: Messaggi da Storage Queue
-- **Event Grid**: Eventi Azure
-- **Service Bus**: Messaggi da Service Bus
-- **Cosmos DB**: Change feed
-
-## Deploy Options
-
-### 1. Azure CLI (zip deploy)
-```bash
-az functionapp deployment source config-zip \
-  -g resource-group \
-  -n function-app \
-  --src function.zip
-```
-
-### 2. GitHub Actions
-```yaml
-- uses: Azure/functions-action@v1
-  with:
-    app-name: 'function-app'
-    package: './output'
-```
-
-### 3. Azure DevOps
-```yaml
-- task: AzureFunctionApp@1
-  inputs:
-    azureSubscription: 'connection'
-    appType: 'functionAppLinux'
-    appName: 'function-app'
-    package: '$(System.DefaultWorkingDirectory)/**/*.zip'
-```
-
-### 4. VS Code
-- Installa extension "Azure Functions"
-- Click destro > Deploy to Function App
-
-## Troubleshooting
-
-### Function non risponde
-- Verifica Application Insights logs
-- Controlla Function Keys
-- Verifica deployment del codice
-
-### Errori di accesso Storage
-- Verifica Managed Identity role assignment
-- Controlla connection string in app settings
-- Verifica firewall storage account
-
-### Cold start lento
-- Considera Premium Plan
-- Riduci dipendenze Python
-- Usa pre-warmed instances
-
-### Out of memory
-- Aumenta Service Plan SKU
-- Ottimizza codice Python
-- Verifica memory leaks
-
-## Sicurezza
-
-1. **Function Keys**: Non committare in git
-2. **Managed Identity**: Preferire a connection string
-3. **HTTPS only**: Sempre abilitato
-4. **VNet integration**: Per risorse private
-5. **Storage firewall**: Limitare accesso
-6. **App settings**: Non loggare secrets
-7. **CORS**: Configurare origins specifici
-8. **Azure AD**: Autenticazione per API pubbliche
 
 ## Riferimenti
 
@@ -370,3 +287,26 @@ az functionapp deployment source config-zip \
 - [Python Developer Guide](https://docs.microsoft.com/azure/azure-functions/functions-reference-python)
 - [Functions Pricing](https://azure.microsoft.com/pricing/details/functions/)
 - [Best Practices](https://docs.microsoft.com/azure/azure-functions/functions-best-practices)
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l'obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
+
+## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
+Public projects 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
+*Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.

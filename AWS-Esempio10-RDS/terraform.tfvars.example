@@ -1,0 +1,37 @@
+# AWS Region
+region = "eu-central-1"
+
+# RDS Configuration
+cluster_identifier = "my-aurora-cluster"
+database_name      = "mydb"
+master_username    = "admin"
+master_password    = "ChangeMe123!SecurePassword"
+
+# Instance Configuration
+instance_class = "db.t3.small"
+instance_count = 1
+
+# Security
+publicly_accessible = true
+allowed_cidr_blocks = ["0.0.0.0/0"]  # MODIFICA: Limita al tuo IP per sicurezza
+# allowed_cidr_blocks = ["YOUR_IP/32"]
+
+# Backup
+backup_retention_period = 7
+skip_final_snapshot     = true
+
+# Protection
+deletion_protection = false
+
+# Monitoring (opzionale)
+enable_performance_insights    = false
+enable_cloudwatch_alarms       = false
+monitoring_interval            = 0
+
+# Tags
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio10RDS"
+  CreatedBy   = "Terraform"
+}

@@ -56,7 +56,7 @@ output "function_code_path" {
 
 output "deploy_command" {
   description = "Comando per deployare la function"
-  value       = "az functionapp deployment source config-zip -g ${azurerm_resource_group.main.name} -n ${var.function_app_name} --src ${data.archive_file.function_code.output_path}"
+  value       = "az functionapp deployment source config-zip -g ${azurerm_resource_group.main.name} -n ${var.function_app_name} --src ${data.archive_file.function_code.output_path} --build-remote true"
 }
 
 output "test_curl_command" {

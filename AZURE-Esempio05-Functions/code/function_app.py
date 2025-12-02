@@ -5,8 +5,12 @@ import azure.functions as func
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 
+# Crea l'app Azure Functions (Python v2 model)
+app = func.FunctionApp()
 
-def main(req: func.HttpRequest) -> func.HttpResponse:
+@app.function_name(name="list_blobs")
+@app.route(route="list-blobs", auth_level=func.AuthLevel.FUNCTION, methods=["GET", "POST"])
+def list_blobs(req: func.HttpRequest) -> func.HttpResponse:
     """
     Azure Function che lista i blob in un container.
     Può ricevere il path come query parameter.

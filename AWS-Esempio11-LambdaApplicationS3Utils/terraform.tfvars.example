@@ -1,0 +1,60 @@
+# AWS Region
+region = "eu-central-1"
+
+# Project Configuration
+project_name = "esempio-11"
+environment  = "dev"
+
+# S3 Configuration
+bucket_name          = "my-company-esempio11-storage"
+force_destroy_bucket = true
+
+# DynamoDB Configuration
+dynamodb_logs_table_name = "esempio-11-logs"
+dynamodb_scan_suffix     = "scan"
+dynamodb_billing_mode    = "PAY_PER_REQUEST"
+
+# RDS Configuration
+create_rds         = true
+rds_engine         = "aurora-mysql"
+rds_engine_version = "8.0.mysql_aurora.3.04.0"
+rds_instance_class = "db.t3.small"
+rds_database_name  = "esempio11db"
+
+# Lambda Configuration
+lambda_runtime     = "python3.11"
+lambda_timeout     = 300
+lambda_memory_size = 512
+
+# API Gateway Configuration
+api_name       = "esempio-11-api"
+api_stage_name = "v1"
+
+# EventBridge Configuration
+enable_s3_scan_schedule     = true
+s3_scan_schedule_expression = "cron(0 2 * * ? *)"  # Giornaliera alle 02:00 UTC
+
+# SFTP Configuration
+sftp_private_key_ssm_parameter = "/esempio-11/sftp/private-key"
+
+# CloudWatch Configuration
+log_retention_days           = 7
+enable_cloudwatch_alarms     = true
+lambda_error_threshold       = 5
+api_4xx_threshold           = 10
+api_5xx_threshold           = 5
+alarm_email                 = "your-email@example.com"  # Lascia vuoto per non creare SNS topic
+
+# Tags
+tags = {
+  Environment = "dev"
+  Owner       = "alnao"
+  Example     = "Esempio11LambdaApplicationS3Utils"
+  CreatedBy   = "Terraform"
+}
+
+# Additional custom tags
+additional_tags = {
+  CostCenter = "Engineering"
+  Team       = "Backend"
+}

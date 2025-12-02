@@ -6,10 +6,6 @@
         "isEnabled": true,
         "maxTelemetryItemsPerSecond": 20
       }
-    },
-    "logLevel": {
-      "default": "Information",
-      "Function": "Information"
     }
   },
   "extensionBundle": {

@@ -8,13 +8,19 @@ variable "location" {
   description = "Azure region"
   type        = string
   default     = "westeurope"
+# default     = "francecentral"   # Francia centrale
+# default     = "germanywestcentral" # Germania ovest
+# default     = "uksouth"         # UK sud
+# default     = "switzerlandnorth" # Svizzera nord
+# default     = "eastus"          # USA est
+# default     = "westeurope"      # Olanda (originale)
 }
 
 # Storage Accounts
 variable "storage_account_name" {
   description = "Nome dello storage account per Function App"
   type        = string
-  default     = "stfuncapp05"
+  default     = "terraformesempio05funct"
 }
 
 variable "storage_account_tier" {
@@ -111,10 +117,8 @@ variable "enable_managed_identity" {
   default     = true
 }
 
-# Function Code
-# Note: Il codice Python è ora separato nei file:
-# - __init__.py: Codice principale della function
-# - function.json: Configurazione binding
+# Function Code (Python v2 programming model)
+# - function_app.py: entry point con @app.route
 # - host.json: Configurazione runtime
 # - requirements.txt: Dipendenze Python
 
