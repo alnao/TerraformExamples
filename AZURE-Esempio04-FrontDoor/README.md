@@ -1,7 +1,7 @@
 # Azure Esempio 04 - Azure Front Door
 
 Questo esempio mostra come creare una distribuzione Azure Front Door per servire contenuti statici da Blob Storage con HTTPS, caching, WAF e performance ottimizzate.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**:
 - Resource Group: Gruppo di risorse
@@ -34,7 +34,7 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 - `https_redirect_enabled`: Redirect HTTP→HTTPS (default: true)
 
 **Costi stimati** (West Europe)
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - **Standard SKU**:
   - Base: €22/mese
   - Data Transfer OUT (Zone 1 - Europa/USA): €0.081/GB

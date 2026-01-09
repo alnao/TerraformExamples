@@ -3,7 +3,7 @@
 API Management con due API:
 - **GET /api/files**: Lista blob da Storage Account
 - **POST /api/calculate**: Calcola ipotenusa
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 ## Risorse
 - API Management (Consumption SKU)

@@ -1,7 +1,7 @@
 # Azure Esempio 03 - Sito Web Statico su Blob Storage
 
 Questo esempio mostra come creare e hostare un sito web statico su Azure Blob Storage usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**:
 - Resource Group: Gruppo di risorse per organizzare le risorse
@@ -30,7 +30,7 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 - `enable_versioning`: Abilita versioning (default: true)
 
 **Costi stimati** (West Europe)
-⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - Storage Account (Hot tier): ~€0.018/GB/mese
 - Transazioni (letture): ~€0.004 per 10.000 operazioni
 - Bandwidth (egress): €0.087/GB (primi 10 TB)

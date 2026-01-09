@@ -1,7 +1,7 @@
 # AWS Esempio 07 - Step Functions con S3 Copy
 
 Questo esempio mostra come usare AWS Step Functions per orchestrare un workflow automatico che copia file tra bucket S3 e registra le operazioni tramite Lambda.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Workflow**
 1. File caricato nel bucket source

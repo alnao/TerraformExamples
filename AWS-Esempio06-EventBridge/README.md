@@ -1,7 +1,7 @@
 # AWS Esempio 06 - EventBridge con Lambda
 
 Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamente una Lambda function quando un file viene caricato in un bucket S3.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**
 - S3 Bucket: Bucket sorgente che genera eventi

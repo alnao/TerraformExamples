@@ -1,7 +1,7 @@
 # AWS-Esempio01-BucketS3
 
 Questo modulo Terraform crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e molte opzioni configurabili.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Variabili principali**
 - `region`: Regione AWS (default: eu-central-1)

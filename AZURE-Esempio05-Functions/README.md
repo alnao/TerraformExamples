@@ -1,7 +1,7 @@
 # AZURE Esempio 05 - Azure Functions
 
 Questo esempio mostra come creare una Azure Function con Terraform che lista i blob in un Azure Storage Container in base al path fornito come parametro.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**
 - **Resource Group**: Contenitore per tutte le risorse

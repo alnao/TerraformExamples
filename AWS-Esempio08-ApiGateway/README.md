@@ -1,7 +1,7 @@
 # AWS Esempio 08 - API Gateway REST API
 
 Questo esempio mostra come creare un'API Gateway REST con due endpoint che integrano Lambda Functions per diverse operazioni: listing di file S3 e calcolo matematico.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Architettura API**
 1. Client HTTP invia richiesta GET /files

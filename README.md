@@ -17,7 +17,7 @@ Ogni esempio è contenuto in una cartella specifica e include:
 **Prerequisiti** necessari al funzionamento degli esempi:
 - [Terraform](https://www.terraform.io/downloads.html) installato, consigliato anche Docker
 - Account cloud attivo e funzionante (AWS, Azure, ecc.), 
-   - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+   - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - Per ogni cloud attivo, è necessario avere le credenziali configurate:
    - Per AWS devono essere configurate le credenziali tramite il comando `aws configure` della AWS CLI
       - Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-aws-alnao`, modificare il file `backend.ft` per personalizzare questa configurazione.
@@ -49,6 +49,7 @@ Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-
 
 - **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili
 - **AWS-Esempio02-IstanzaEC2**: crea un'istanza EC2 con Amazon Linux 2023, Security Group configurabile per SSH/HTTP/HTTPS, supporto chiavi SSH, volumi EBS cifrati, user data per inizializzazione e Elastic IP opzionale
+- **AWS-Esempio02-IstanzaEC2-module**: crea una istanza EC2 usando il modulo ufficiale disponibile su `registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws` 
 - **AWS-Esempio03-WebSiteS3**: hosting di sito web statico su S3 con configurazione automatica di accesso pubblico, CORS, versioning, custom error pages e upload automatico di file HTML
 - **AWS-Esempio04-CloudFront**: distribuzione CloudFront CDN con origine S3, HTTPS nativo, Origin Access Control (OAC), compressione automatica, custom error responses, WAF opzionale e supporto domini personalizzati con certificati ACM
 - **AWS-Esempio05-Lambda**: Lambda function Python 3.11 che lista oggetti in bucket S3 con parametro path, Function URL per invocazione HTTP diretta, IAM role con accesso S3, CloudWatch Logs, CORS configurato, supporto VPC, Dead Letter Queue opzionale e CloudWatch Alarms per monitoring
@@ -60,7 +61,7 @@ Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-
 - **AWS-Esempio10-RDS**: *progetto in fase di revisione,* cluster RDS Aurora MySQL 8.0 più piccolo disponibile (db.t3.small) con accesso pubblico configurabile, Security Group con porta 3306, backup automatici (7 giorni), CloudWatch Logs (audit, error, general, slowquery), Parameter Groups personalizzati, Enhanced Monitoring opzionale, Performance Insights opzionale e CloudWatch Alarms per CPU/connessioni/memoria
 - **AWS-Esempio11-LambdaApplicationS3Utils**: *progetto in fase di revisione,* applicazione serverless completa con 8 Lambda Functions (presigned URL, extract ZIP, Excel to CSV, upload to RDS, SFTP send, S3 scan, list/search files), S3 Bucket con public access policy, 2 DynamoDB Tables (logs e scan), RDS Aurora MySQL, API Gateway REST con 7 endpoint, EventBridge per orchestrazione e scheduling (scansione S3 giornaliera), Secrets Manager per credenziali RDS, SSM Parameter Store per chiave SFTP RSA, CloudWatch con alarms e logging, IAM con policy granulari e tagging completo. L'applicazione gestisce l'intero ciclo di vita dei file: upload tramite presigned URL, elaborazione automatica (ZIP extraction, Excel conversion), caricamento dati su database, invio via SFTP e API per ricerca/elenco file
 - **AWS-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 
 ## Esempi Azure (Microsoft Azure)
@@ -76,7 +77,7 @@ In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempio
 - **AZURE-Esempio08-APIManagement**: *progetto in fase di revisione,* API Management (Consumption SKU) con due API - GET /api/files (lista blob) e POST /api/calculate (calcola ipotenusa), backend Azure Functions, API Operations con policies personalizzate, Application Insights logger, Named Values per configurazione e throttling/quota opzionali
 - **AZURE-Esempio09-CosmosMongo**: database CosmosDB con API MongoDB, consistency levels configurabili (5 livelli), geo-replication multi-region, autoscaling, modalità serverless, backup periodic/continuous, free tier (400 RU/s gratuiti) e Analytical Storage per Synapse Link
 - **AZURE-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 ## Esempi DevOps & CI/CD
 - **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*

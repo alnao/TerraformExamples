@@ -1,7 +1,7 @@
 # AZURE Esempio 06 - Event Grid
 
 Esempio Azure Function triggerata da Event Grid quando viene caricato un blob in Storage Account.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 ## Risorse
 - Resource Group

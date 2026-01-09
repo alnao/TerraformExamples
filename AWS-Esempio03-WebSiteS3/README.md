@@ -1,7 +1,7 @@
 # AWS Esempio 03 - Sito Web Statico su S3
 
 Questo esempio mostra come creare e hostare un sito web statico su Amazon S3 usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - ⚠️ NOTA: S3 website endpoint supporta solo HTTP. Per HTTPS è necessario CloudFront (vedi AWS-Esempio04-CloudFront). ⚠️
 
 

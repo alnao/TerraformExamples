@@ -1,7 +1,7 @@
 # AWS Esempio 04 - CloudFront CDN
 
 Questo esempio mostra come creare una distribuzione Amazon CloudFront per servire contenuti statici da S3 con HTTPS, caching e performance ottimizzate.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**
 - S3 Bucket**: Bucket privato per il contenuto origin

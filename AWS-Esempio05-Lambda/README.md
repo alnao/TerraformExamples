@@ -1,7 +1,7 @@
 # AWS Esempio 05 - Lambda Function
 
 Questo esempio mostra come creare una AWS Lambda function con Terraform che lista gli oggetti in un bucket S3 in base al path fornito come parametro.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**
 - S3 Bucket: Bucket per testing della Lambda

@@ -1,7 +1,7 @@
 # AWS Esempio 09 - Amazon DynamoDB
 
 Questo esempio mostra come creare e gestire una tabella Amazon DynamoDB con Terraform, includendo configurazioni avanzate come indexes, streams, autoscaling, backup e global tables per replica multi-region.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Architettura DynamoDB**
 1. Applicazione invia richiesta di lettura/scrittura a DynamoDB

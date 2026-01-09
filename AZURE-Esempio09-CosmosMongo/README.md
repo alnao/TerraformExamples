@@ -1,7 +1,7 @@
 # Azure Esempio 09 - CosmosDB con MongoDB API
 
 Questo esempio mostra come creare un database Azure CosmosDB con API MongoDB usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe ero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**
 - Resource Group: Gruppo di risorse dedicato

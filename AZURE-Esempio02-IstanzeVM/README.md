@@ -1,7 +1,7 @@
 # Azure Esempio 02 - Istanze VM (Virtual Machine)
 
 Questo esempio mostra come creare una Virtual Machine Linux su Azure usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 **Risorse create**:
 - Resource Group: Gruppo di risorse per organizzare le risorse
@@ -29,7 +29,7 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 
 
 **Costi stimati** (West Europe)
-⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - VM Standard_B1s: ~€7.30/mese (1 vCPU, 1 GB RAM)
     | Dimensione | vCPU | RAM | Disco Temp | Costo/mese |
     |------------|------|-----|------------|------------|

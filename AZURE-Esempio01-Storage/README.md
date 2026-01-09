@@ -1,5 +1,5 @@
 # Azure-Esempio01-Storage
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbero causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 
 Questo esempio crea un **Azure Storage Account** con container blob, equivalente funzionale ad un bucket S3 di AWS. Include configurazioni avanzate per sicurezza, versioning, soft delete e lifecycle management.
 I componenti creati da questo esempio sono:
