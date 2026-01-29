@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
+    }
   }
 }
 
@@ -13,6 +17,13 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+}
+
+# Package Function App code in a zip and upload to the function storage account
+data "archive_file" "function_package" {
+  type        = "zip"
+  source_dir  = "${path.module}/function_code"
+  output_path = "${path.module}/function_code.zip"
 }
 
 # Resource Group
@@ -50,6 +61,56 @@ resource "azurerm_storage_account" "function" {
   tags                     = var.tags
 }
 
+resource "azurerm_storage_container" "function_package" {
+  name                  = "function-code"
+  storage_account_name  = azurerm_storage_account.function.name
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_blob" "function_package" {
+  name                   = "${data.archive_file.function_package.output_md5}.zip"
+  storage_account_name   = azurerm_storage_account.function.name
+  storage_container_name = azurerm_storage_container.function_package.name
+  type                   = "Block"
+  source                 = data.archive_file.function_package.output_path
+  content_md5            = data.archive_file.function_package.output_md5
+}
+
+
+data "azurerm_storage_account_sas" "function_package" {
+  connection_string = azurerm_storage_account.function.primary_connection_string
+
+  https_only = true
+  start      = timeadd(timestamp(), "-5m")
+  expiry     = timeadd(timestamp(), "8760h") # 1 year
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  resource_types {
+    service   = false
+    container = true
+    object    = true
+  }
+
+  permissions {
+    read    = true
+    write   = false
+    delete  = false
+    list    = false
+    add     = false
+    create  = false
+    update  = false
+    process = false
+    tag     = false
+    filter  = false
+  }
+}
+
 # Application Insights
 resource "azurerm_application_insights" "main" {
   name                = "${var.function_app_name}-insights"
@@ -58,6 +119,11 @@ resource "azurerm_application_insights" "main" {
   application_type    = "other"
   retention_in_days   = var.appinsights_retention_days
   tags                = var.tags
+
+  lifecycle {
+    # Preserve any existing workspace association; Azure does not allow removing it once set.
+    ignore_changes = [workspace_id]
+  }
 }
 
 # Service Plan
@@ -78,6 +144,7 @@ resource "azurerm_linux_function_app" "main" {
   service_plan_id            = azurerm_service_plan.main.id
   storage_account_name       = azurerm_storage_account.function.name
   storage_account_access_key = azurerm_storage_account.function.primary_access_key
+  zip_deploy_file            = data.archive_file.function_package.output_path
 
   site_config {
     application_stack {
@@ -90,20 +157,32 @@ resource "azurerm_linux_function_app" "main" {
   app_settings = merge(
     {
       FUNCTIONS_WORKER_RUNTIME       = "python"
+      FUNCTIONS_EXTENSION_VERSION    = "~4"
+      AzureWebJobsStorage            = azurerm_storage_account.function.primary_connection_string
       SOURCE_STORAGE_CONNECTION      = azurerm_storage_account.source.primary_connection_string
       SOURCE_STORAGE_ACCOUNT_NAME    = azurerm_storage_account.source.name
       SOURCE_CONTAINER_NAME          = azurerm_storage_container.source.name
-      ENABLE_ORYX_BUILD              = "true"
-      SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
     },
     var.app_settings
   )
+
 
   identity {
     type = "SystemAssigned"
   }
 
   tags = var.tags
+}
+
+# Wait for Function App to be ready and triggers synced
+resource "time_sleep" "wait_for_function" {
+  create_duration = "120s"
+  triggers = {
+    # Run when the function app ID changes (e.g. app settings update)
+    function_app_id = azurerm_linux_function_app.main.id
+    # Run when the package changes
+    package_md5    = data.archive_file.function_package.output_md5
+  }
 }
 
 # Event Grid System Topic per Storage Account
@@ -126,6 +205,8 @@ resource "azurerm_eventgrid_event_subscription" "blob_created" {
     max_events_per_batch              = var.max_events_per_batch
     preferred_batch_size_in_kilobytes = var.preferred_batch_size_in_kilobytes
   }
+
+  depends_on = [time_sleep.wait_for_function]
 
   included_event_types = var.included_event_types
 
