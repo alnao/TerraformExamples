@@ -1,0 +1,14 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+
+# Function deployment
+function.zip
+__pycache__/
+*.pyc
+.python_packages/
+.venv/

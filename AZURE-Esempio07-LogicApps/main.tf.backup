@@ -68,9 +68,7 @@ data "archive_file" "function_code" {
     "*.tf",
     "*.tfvars",
     "*.md",
-    "logic_app_workflow.json",
-    "*.backup",
-    "tfplan"
+    "logic_app_workflow.json"
   ]
 }
 
@@ -109,23 +107,12 @@ data "azurerm_storage_account_blob_container_sas" "function_sas" {
   }
 }
 
-# Log Analytics Workspace per Application Insights
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${var.logic_app_name}-logs"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
-  tags                = var.tags
-}
-
 # Application Insights
 resource "azurerm_application_insights" "main" {
   name                = "${var.logic_app_name}-insights"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   application_type    = "other"
-  workspace_id        = azurerm_log_analytics_workspace.main.id
   tags                = var.tags
 }
 
@@ -207,13 +194,46 @@ resource "azurerm_api_connection" "azureblob" {
 
 data "azurerm_client_config" "current" {}
 
-# Note: Il workflow della Logic App (trigger e actions) deve essere configurato
-# manualmente nel portale Azure dopo il deploy iniziale, poiché Terraform
-# non supporta completamente la configurazione dei parametri $connections
-# necessari per le API connections.
-# 
-# In alternativa, puoi usare Azure CLI per importare il workflow:
-# az logic workflow create --resource-group <rg> --name <name> --definition @logic_app_workflow.json
+# Logic App Trigger - When a blob is added or modified
+resource "azurerm_logic_app_trigger_recurrence" "check_blobs" {
+  name         = "Check_for_new_blobs"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+  frequency    = "Minute"
+  interval     = 1
+}
+
+# Note: Il trigger e le action per blob copy devono essere configurate manualmente
+# nel portale Azure o tramite Azure CLI dopo il deploy,
+# poiché Terraform non supporta completamente i parametri $connections
+# per le API connections nelle Logic Apps.
+#
+# Oppure utilizzare il workflow JSON di riferimento: logic_app_workflow.json
+
+# Logic App Action - Call Logger Function
+resource "azurerm_logic_app_action_http" "call_logger" {
+  name         = "Call_Logger_Function"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+  method       = "POST"
+  uri          = "https://${azurerm_linux_function_app.main.default_hostname}/api/logger"
+
+  headers = {
+    "Content-Type" = "application/json"
+  }
+
+  body = jsonencode({
+    blobName             = "@{triggerBody()?['Name']}"
+    sourceContainer      = "source"
+    destinationContainer = "destination"
+    operationTime        = "@{utcNow()}"
+  })
+
+  run_after {
+    action_name   = "Copy_blob"
+    action_result = "Succeeded"
+  }
+
+  depends_on = [azurerm_logic_app_action_custom.copy_blob]
+}
 
 # Role Assignments
 resource "azurerm_role_assignment" "logicapp_source_reader" {

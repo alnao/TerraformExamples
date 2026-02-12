@@ -1,0 +1,378 @@
+# AZURE Esempio 07 - Logic Apps
+
+Logic App completa che copia blob da storage source a destination e invoca una Function App per il logging delle operazioni.
+
+⚠️ **Nota importante**: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attenzione prima di eseguire qualsiasi comando ⚠️
+
+## Architettura
+
+```
+Storage Source → Logic App Trigger → Copy Blob → Storage Destination
+                                   ↓
+                              Function App Logger
+                                   ↓
+                            Application Insights
+```
+
+## Risorse Create
+
+- **Resource Group**: contenitore per tutte le risorse
+- **3 Storage Accounts**:
+  - `source`: storage di origine con container "source"
+  - `destination`: storage di destinazione con container "destination"  
+  - `function`: storage per la Function App
+- **Logic App Workflow**: workflow completo con trigger e azioni
+- **Function App**: Azure Function Python 3.11 per logging HTTP-triggered
+- **Application Insights**: monitoring e logging centralizzato
+- **API Connection**: connessione Azure Blob per Logic App
+- **Role Assignments**: permessi RBAC per accesso agli storage
+
+## File del Progetto
+
+### Terraform
+- `main.tf`: configurazione Terraform principale con deploy automatico del codice
+- `variables.tf`: variabili configurabili
+- `outputs.tf`: output utili post-deployment
+- `backend.tf`: configurazione backend remoto
+- `terraform.tfvars.example`: template per personalizzare le variabili
+
+### Function App
+- `function_app.py`: codice Python della Function App con 2 endpoint HTTP
+- `requirements.txt`: dipendenze Python (azure-functions)
+- `host.json`: configurazione runtime Azure Functions v2
+
+### Logic App
+- `logic_app_workflow.json`: definizione completa del workflow JSON (riferimento)
+
+### Utility
+- `deploy.sh`: script bash per deploy automatico con validazioni
+- `test_function.py`: script Python per test locale della funzione
+- `.gitignore`: esclusioni Git per Terraform e Python
+
+## Workflow Logic App
+
+1. **Trigger**: monitoraggio container `source` ogni minuto
+2. **Action 1**: copia blob in container `destination`
+3. **Action 2**: chiamata HTTP POST alla Function App con dettagli operazione
+
+## Function App
+
+La funzione espone 2 endpoint:
+- `POST /api/logger`: riceve dettagli copia blob e registra in Application Insights
+- `GET /api/health`: health check
+
+Payload di esempio per `/api/logger`:
+```json
+{
+  "blobName": "test.txt",
+  "sourceContainer": "source",
+  "destinationContainer": "destination",
+  "operationTime": "2026-02-12T10:30:00Z"
+}
+```
+
+## Prerequisiti
+
+- [Terraform](https://www.terraform.io/downloads) >= 1.0
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) >= 2.40
+- Subscription Azure attiva
+- Permessi per creare risorse nel resource group
+
+```bash
+# Login Azure
+az login
+
+# Imposta la subscription (se necessario)
+az account set --subscription "YOUR_SUBSCRIPTION_ID"
+```
+
+**Nota Importante**: A causa di limitazioni del provider Terraform AzureRM nella gestione dei parametri `$connections` per le Logic Apps, il workflow (trigger e actions) deve essere configurato manualmente dopo il deploy iniziale tramite il portale Azure o Azure CLI. Terraform creerà tutte le risorse necessarie (storage, function, Logic App vuota, API connections, RBAC).
+
+## Utilizzo
+
+### 1. Deploy Infrastruttura
+
+#### Opzione A: Deploy Automatico (Consigliato)
+
+```bash
+# Rendi eseguibile lo script
+chmod +x deploy.sh
+
+# Esegui il deploy
+./deploy.sh
+```
+
+Lo script esegue automaticamente: init, validate, format, plan e apply (con conferma).
+
+#### Opzione B: Deploy Manuale
+
+```bash
+# Inizializza Terraform
+terraform init
+
+# Verifica il piano
+terraform plan
+
+# Applica la configurazione
+terraform apply -auto-approve
+```
+
+**Nota**: Terraform crea automaticamente un archivio ZIP del codice della Function App e lo deploya su Azure Storage per essere caricato nella Function App tramite `WEBSITE_RUN_FROM_PACKAGE`.
+
+pp Workflow
+
+Dopo il deploy Terraform, il workflow della Logic App deve essere configurato manualmente:
+
+#### Opzione A: Portale Azure (Consigliato per principianti)
+
+```bash
+# Esegui lo script helper che mostra le istruzioni
+chmod +x configure_logic_app.sh
+./configure_logic_app.sh
+```
+
+Lo script ti guiderà attraverso la configurazione nel portale Azure.
+
+#### Opzione B: Manuale nel Portale
+
+1. Apri il portale Azure e naviga alla Logic App creata
+2. Vai su "Logic App Designer"  
+3. **Aggiungi Trigger**: "When a blob is added or modified (properties only)"
+   - Connection: usa `azureblob-connection` (già creata da Terraform)
+   - Storage account: quello di source (da output Terraform)
+   - Container: `/source`
+   - Interval: `1 Minute`
+4. **Aggiungi Action 1**: "Copy blob"
+   - Source: usa Dynamic content → `Path` dal trigger
+   - Destination: `/destination/` + Dynamic content → `Name`
+   - Overwrite: `Yes`
+5. **Aggiungi Action 2**: "HTTP"
+   - Method: `POST`
+   - URI: ottieni da `terraform output function_app_url` + `/api/logger`
+   - Headers: `Content-Type: application/json`
+   - Body:
+     ```json
+     {
+       "blobName": "@{triggerBody()?['Name']}",
+       "sourceContainer": "source",
+       "destinationContainer": "destination",
+       "operationTime": "@{utcNow()}"
+     }
+     ```
+6. Salva e abilita la Logic App
+
+#### Opzione C: Azure CLI (Per utenti avanzati)
+
+Modifica `logic_app_workflow.json` con gli ID corretti, poi:
+
+```bash
+az logicapp update \
+  --resource-group $(terraform output -raw resource_group_name) \
+  --name logic-copy-blob-07 \
+  --definition @logic_app_workflow.json
+```
+
+### 3. Test del Workflow
+
+### 2. Test del Workflow
+
+```bash
+# Ottieni il nome dello storage (dall'output)
+SOURCE_STORAGE=$(terraform output -raw source_storage_name)
+#### Test remoto
+
+```bash
+FUNCTION_URL=$(terraform output -raw function_app_url)
+
+# Test endpoint logger
+curl -X POST "${FUNCTION_URL}/api/logger" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "blobName": "manual-test.txt",
+    "sourceContainer": "source",
+    "destinationContainer": "destination",
+    "operationTime": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+  }'
+
+# Test health check
+curl "${FUNCTION_URL}/api/health"
+```
+
+#### Test locale
+
+```bash
+# Testa la logica della funzione localmente
+python3 test_function.pyrifica dopo ~1 minuto che il blob sia stato copiato
+az storage blob list \
+  --account-name $(terraform output -raw destination_storage_name) \
+  --container-name destination \
+  --auth-mode login
+```
+
+### 4. Verifica Logging
+
+```bash
+# Visualizza logs della Function App
+az monitor app-insights metrics show \
+  --app $(terraform output -raw application_insights_name) \
+  --resource-group $(terraform output -raw resource_group_name) \
+  --metrics requests
+
+# Oppure nel portale Azure → Application Insights → Logs
+```
+
+### 5. Test Diretto Function App
+
+```bash
+FUNCTION_URL=$(terraform output -raw function_app_url)
+
+curl -X POST "${FUNCTION_URL}/api/logger" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "blobName": "manual-test.txt",
+    "sourceContainer": "source",
+    "destinationContainer": "destination",
+    "operationTime": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+  }'
+```
+Personalizzazione
+
+### Variabili Terraform
+
+Copia il file di esempio e personalizza:
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Modifica terraform.tfvars con i tuoi valori
+```
+
+Oppure passa variabili via CLI:
+
+```bash
+terraform apply \
+  -var="resource_group_name=mio-rg" \
+  -var="location=northeurope" \
+  -var="source_storage_name=mystore01"
+```
+
+### Codice Function App
+
+Per modificare la logica della Function App, edita [function_app.py](function_app.py):
+
+```python
+# Esempio: aggiungere validazione custom
+if not blob_name.endswith('.txt'):, scala automaticamente
+- **Function App**: piano Consumption (Y1) su Linux con Python 3.11
+- **Storage**: replicazione LRS (Local Redundant Storage)
+- **RBAC**: uso di Managed Identity con role assignments automatici
+  - Logic App: Reader su source, Contributor su destination
+  - Function App: Contributor su source (per operazioni future)
+- **Function Package**: deploy automatico tramite `WEBSITE_RUN_FROM_PACKAGE`
+  - Terraform crea ZIP con `archive_file` data source
+  - Upload su storage container dedicato
+  - SAS token per download sicuro
+- **API Connection**: nel portale Azure, vai alla API Connection e autorizza l'accesso
+- **Run History**: controlla Logic App → Run History per errori specifici
+- **RBAC**: verifica che i role assignments siano applicati correttamente
+  ```bash
+  az role assignment list --scope /subscriptions/.../resourceGroups/.../providers/Microsoft.Storage/storageAccounts/stsource07
+  ```
+
+### Function App non risponde (404/500)
+- **Sync Trigger**: alcune volte serve sincronizzare i trigger
+  ```bash
+  az functionapp function sync --name $(terraform output -raw function_app_name) \
+    --resource-group $(terraform output -raw resource_group_name)
+  ```
+- **Application Settings**: verifica `WEBSITE_RUN_FROM_PACKAGE` nel portale
+- **Logs**: controlla i log in tempo reale
+  ```bash
+  az webapp log tail --name $(terraform output -raw function_app_name) \
+    --resource-group $(terraform output -raw resource_group_name)
+  ```
+- **Redeploy**: in caso di problemi, riapplica Terraform
+  ```bash
+  terraform apply -replace="azurerm_storage_blob.function_code"
+  ```
+
+### Errori di permessi / RBAC
+```bash
+# Riapplica role assignments
+terraform apply -replace="azurerm_role_assignment.logicapp_source_reader"
+
+# Verifica identità della Logic App
+az ad sp show --id $(az resource show --ids $(terraform output -raw logic_app_id) --query identity.principalId -o tsv)
+```
+
+### ZIP della Function non si crea
+Se ricevi errori su `archive_file`:
+```bash
+# Verifica che tutti i file necessari esistano
+ls -la function_app.py requirements.txt host.json
+
+# Rimuovi il vecchio ZIP
+rm -f function.zip
+
+# Rigenera con Terraform
+terraform apply -replace="data.archive_file.function_code"
+```
+
+### Logic App esegue ma Function non viene chiamata
+- Verifica che l'URL della Function sia corretto negli output
+- Controlla che la Function App sia completamente avviata (cold start può richiedere 30-60s)
+- Verifica che non ci siano firewall/network security groups che bloccano il trafficoraform destroy -auto-approve
+```
+
+## Variabili Personalizzabili
+
+Puoi modificare i valori in `variables.tf` o passarli come parametri:
+
+```bash
+terraform apply \
+  -var="resource_group_name=mio-rg" \
+  -var="location=northeurope" \
+  -var="source_storage_name=mystore01"
+```
+
+## Note Tecniche
+
+- **Logic App**: tipo Consumption (pay-per-execution)
+- **Function App**: piano Consumption (Y1) su Linux
+- **Storage**: replicazione LRS (Local Redundant Storage)
+- **RBAC**: la Logic App ha permessi Reader su source e Contributor su destination
+- **Function Package**: deploy automatico tramite `WEBSITE_RUN_FROM_PACKAGE`
+- **Monitoring**: Application Insights integrato per correlazione end-to-end
+
+## Troubleshooting
+
+### Logic App non si triggera
+- Verifica che la API Connection sia autorizzata nel portale
+- Controlla Run History per errori
+- Verifica permission RBAC sugli storage
+
+### Function App non risponde
+- Controlla deployment: potrebbe servire `az functionapp deployment source config-zip`
+- Verifica Application Settings
+- Controlla logs in Application Insights
+
+### Errori di permessi
+```bash
+# Riapplica role assignments
+terraform apply -replace="azurerm_role_assignment.logicapp_source_reader"
+```
+
+## Costi Stimati
+
+- Logic App Consumption: ~€0.000125 per esecuzione
+- Function App Consumption: ~€0.000014 per esecuzione + €0.000001 per GB-s
+- Storage LRS: ~€0.018 per GB/mese
+- Application Insights: primi 5 GB/mese gratuiti
+
+**Totale stimato**: < €5/mese per uso development moderato
+
+## Riferimenti
+
+- [Azure Logic Apps](https://docs.microsoft.com/azure/logic-apps/)
+- [Azure Functions Python](https://docs.microsoft.com/azure/azure-functions/functions-reference-python)
+- [Logic Apps Standard vs Consumption](https://docs.microsoft.com/azure/logic-apps/logic-apps-overview)
+- [Application Insights](https://docs.microsoft.com/azure/azure-monitor/app/app-insights-overview)

@@ -1,0 +1,93 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "actions": {
+      "Copy_blob": {
+        "inputs": {
+          "body": "@triggerBody()",
+          "headers": {
+            "ReadFileMetadataFromServer": true
+          },
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "post",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/copyFile",
+          "queries": {
+            "destination": "/destination/@{triggerBody()?['Name']}",
+            "overwrite": true,
+            "queryParametersSingleEncoded": true,
+            "source": "@triggerBody()?['Path']"
+          }
+        },
+        "runAfter": {},
+        "type": "ApiConnection"
+      },
+      "Call_Logger_Function": {
+        "inputs": {
+          "body": {
+            "blobName": "@triggerBody()?['Name']",
+            "destinationContainer": "destination",
+            "operationTime": "@utcNow()",
+            "sourceContainer": "source"
+          },
+          "method": "POST",
+          "uri": "@{parameters('functionAppUrl')}/api/logger?code=@{parameters('functionAppKey')}"
+        },
+        "runAfter": {
+          "Copy_blob": [
+            "Succeeded"
+          ]
+        },
+        "type": "Http"
+      }
+    },
+    "contentVersion": "1.0.0.0",
+    "outputs": {},
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      },
+      "functionAppUrl": {
+        "defaultValue": "",
+        "type": "String"
+      },
+      "functionAppKey": {
+        "defaultValue": "",
+        "type": "SecureString"
+      }
+    },
+    "triggers": {
+      "When_a_blob_is_added_or_modified": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azureblob']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/triggers/batch/onupdatedfile",
+          "queries": {
+            "checkBothCreatedAndModifiedDateTime": false,
+            "folderId": "L3NvdXJjZQ==",
+            "maxFileCount": 10
+          }
+        },
+        "recurrence": {
+          "frequency": "Minute",
+          "interval": 1
+        },
+        "splitOn": "@triggerBody()",
+        "type": "ApiConnection"
+      }
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "value": {}
+    }
+  }
+}

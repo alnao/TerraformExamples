@@ -1,0 +1,23 @@
+# Esempio di file terraform.tfvars personalizzato
+# Copia questo file in terraform.tfvars e modifica i valori
+
+resource_group_name = "alnao-terraform-esempio07-logicapps"
+location            = "westeurope"
+
+# I nomi degli storage account devono essere univoci globalmente
+# Usare solo lettere minuscole e numeri, max 24 caratteri
+source_storage_name      = "stsource07"
+destination_storage_name = "stdest07"
+function_storage_name    = "stfunc07"
+
+# Nomi delle risorse
+logic_app_name    = "logic-copy-blob-07"
+function_app_name = "func-logger-07"
+
+# Tags personalizzati
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio07LogicApps"
+  CreatedBy   = "Terraform"
+}
