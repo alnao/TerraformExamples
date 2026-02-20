@@ -33,6 +33,8 @@ Ogni esempio è contenuto in una cartella specifica e include:
             ```
             subscription_id = "xxxx-xxxx-xxxx-xxxx-xxxx"
             ```
+      - Per alcuni termplate (Esempio08) necessita pacchetti specifici:
+         ```sudo npm install -g azure-functions-core-tools@4 --unsafe-perm true```
       - Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage`, modificare il file `backend.tf` per personalizzare questa configurazione.
          - In caso di blocco (per interruzione improvvisa di precedenti comandi `apply`) con errore `Error: Error acquiring the state lock` si deve procedere manualmente allo sblocco con il comando:
             ```
@@ -74,7 +76,7 @@ In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempio
 - **AZURE-Esempio05-Functions**: Azure Function Python 3.11 che lista blob in Storage Container con parametro path, HTTP Trigger per invocazione REST, Managed Identity per accesso storage, Application Insights per monitoring, CORS configurato, supporto Consumption/Premium plan e Metric Alerts opzionali
 - **AZURE-Esempio06-EventGrid**: Event Grid System Topic su Storage Account che triggera Function quando blob viene creato, Event Grid Subscription con filtri avanzati, batching configurabile, retry policy, Dead Letter destination opzionale e integrazione Application Insights per monitoring
 - **AZURE-Esempio07-LogicApps**: *progetto in fase di revisione,* Logic App Workflow che copia blob da storage A a B e invoca Function per logging, trigger automatico quando blob viene aggiunto, API Connection per Blob Storage, Managed Identity per accesso sicuro, orchestrazione visuale e integrazione completa con servizi Azure
-- **AZURE-Esempio08-APIManagement**: *progetto in fase di revisione,* API Management (Consumption SKU) con due API - GET /api/files (lista blob) e POST /api/calculate (calcola ipotenusa), backend Azure Functions, API Operations con policies personalizzate, Application Insights logger, Named Values per configurazione e throttling/quota opzionali
+- **AZURE-Esempio08-APIManagement**: API Management (Consumption SKU) con due API - GET /api/files (lista blob) e POST /api/calculate (calcola ipotenusa), backend Azure Functions, API Operations con policies personalizzate, Application Insights logger, Named Values per configurazione e throttling/quota opzionali
 - **AZURE-Esempio09-CosmosMongo**: database CosmosDB con API MongoDB, consistency levels configurabili (5 livelli), geo-replication multi-region, autoscaling, modalità serverless, backup periodic/continuous, free tier (400 RU/s gratuiti) e Analytical Storage per Synapse Link
 - **AZURE-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
 - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️

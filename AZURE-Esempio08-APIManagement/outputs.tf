@@ -21,3 +21,11 @@ output "function_app_name" {
 output "storage_account_name" {
   value = azurerm_storage_account.files.name
 }
+
+output "resource_group_name" {
+  value = azurerm_resource_group.main.name
+}
+
+output "apim_name" {
+  value = azurerm_api_management.main.name
+}

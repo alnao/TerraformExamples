@@ -1,0 +1,20 @@
+# Esempio di file terraform.tfvars
+# Copiare in terraform.tfvars e personalizzare i valori
+
+resource_group_name  = "alnao-terraform-esempio08-apim"
+location             = "westeurope"
+storage_account_name = "stfiles08"
+function_storage_name = "stfunc08"
+function_app_name    = "func-api-08"
+apim_name            = "apim-esempio08"
+apim_sku             = "Consumption_0"
+publisher_name       = "alnao"
+publisher_email      = "admin@example.com"
+subscription_required = false
+
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio08APIManagement"
+  CreatedBy   = "Terraform"
+}

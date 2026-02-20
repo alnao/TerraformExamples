@@ -42,12 +42,23 @@ resource "azurerm_storage_account" "function" {
   tags                     = var.tags
 }
 
-# Application Insights
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${var.apim_name}-logs"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+  tags                = var.tags
+}
+
+# Application Insights (workspace-based)
 resource "azurerm_application_insights" "main" {
   name                = "${var.apim_name}-insights"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   application_type    = "other"
+  workspace_id        = azurerm_log_analytics_workspace.main.id
   tags                = var.tags
 }
 
@@ -78,10 +89,14 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   app_settings = {
-    FUNCTIONS_WORKER_RUNTIME       = "python"
-    FILES_STORAGE_CONNECTION       = azurerm_storage_account.files.primary_connection_string
-    FILES_STORAGE_ACCOUNT_NAME     = azurerm_storage_account.files.name
-    FILES_CONTAINER_NAME           = azurerm_storage_container.files.name
+    FUNCTIONS_WORKER_RUNTIME           = "python"
+    FUNCTIONS_EXTENSION_VERSION         = "~4"
+    AzureWebJobsFeatureFlags            = "EnableWorkerIndexing"
+    SCM_DO_BUILD_DURING_DEPLOYMENT      = "true"
+    ENABLE_ORYX_BUILD                   = "true"
+    FILES_STORAGE_CONNECTION            = azurerm_storage_account.files.primary_connection_string
+    FILES_STORAGE_ACCOUNT_NAME          = azurerm_storage_account.files.name
+    FILES_CONTAINER_NAME                = azurerm_storage_container.files.name
   }
 
   identity {
@@ -191,11 +206,6 @@ resource "azurerm_api_management_backend" "function" {
   protocol            = "http"
   url                 = "https://${azurerm_linux_function_app.main.default_hostname}/api"
 
-  credentials {
-    header = {
-      "x-functions-key" = "@(context.Variables.GetValueOrDefault<string>(\"function-key\", \"\"))"
-    }
-  }
 }
 
 # Policy per GET /files
@@ -211,6 +221,9 @@ resource "azurerm_api_management_api_operation_policy" "get_files" {
         <base />
         <set-backend-service backend-id="${azurerm_api_management_backend.function.name}" />
         <rewrite-uri template="/list-blobs" />
+        <set-header name="x-functions-key" exists-action="override">
+            <value>{{function-key}}</value>
+        </set-header>
     </inbound>
     <backend>
         <base />
@@ -238,6 +251,9 @@ resource "azurerm_api_management_api_operation_policy" "post_calculate" {
         <base />
         <set-backend-service backend-id="${azurerm_api_management_backend.function.name}" />
         <rewrite-uri template="/calculate-hypotenuse" />
+        <set-header name="x-functions-key" exists-action="override">
+            <value>{{function-key}}</value>
+        </set-header>
     </inbound>
     <backend>
         <base />
@@ -259,7 +275,7 @@ resource "azurerm_role_assignment" "function_storage_reader" {
   principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
 }
 
-# Named Value per Function Key (da configurare manualmente)
+# Named Value per Function Key (da configurare manualmente dopo il deploy)
 resource "azurerm_api_management_named_value" "function_key" {
   name                = "function-key"
   resource_group_name = azurerm_resource_group.main.name
@@ -267,4 +283,8 @@ resource "azurerm_api_management_named_value" "function_key" {
   display_name        = "function-key"
   value               = "default-key-placeholder"
   secret              = true
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
