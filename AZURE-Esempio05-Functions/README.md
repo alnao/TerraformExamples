@@ -18,7 +18,10 @@ Questo esempio mostra come creare una Azure Function con Terraform che lista i b
 - Azure CLI installato e autenticato
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
-
+  - La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 
 **Funzionamento della Function**
 1. Riceve una richiesta HTTP con parametro `path` opzionale
@@ -56,7 +59,8 @@ Questo esempio mostra come creare una Azure Function con Terraform che lista i b
   - Oppure inizializzazione del terraform
     ```bash
     terraform init
-    terraform plan
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    terraform plan    
     terraform apply
     ```
     - Deploy del terraform con parametri 
@@ -99,87 +103,96 @@ Questo esempio mostra come creare una Azure Function con Terraform che lista i b
 
     echo $FUNCTION_KEY
     ```
-  - Test della Function
-    1. Via HTTP
-      ```bash
-      # Ottieni hostname
-      HOSTNAME=$(terraform output -raw function_app_hostname)
-      echo $HOSTNAME
-
-      # Get function key (come sopra)
-      FUNCTION_KEY=$(az functionapp keys list \
-        -g alnao-terraform-esempio05-functions \
-        -n  alnao-terraform-esempio05-functions \
-        --query "functionKeys.default" -o tsv)
-
-      # Test senza path
-      curl "https://$HOSTNAME/api/list-blobs" \
-        -H "x-functions-key: $FUNCTION_KEY"
-
-      # Test con path specifico
-      curl "https://$HOSTNAME/api/list-blobs?path=test/" \
-        -H "x-functions-key: $FUNCTION_KEY"
-      ```
-    2. Upload blob di test
-
-      ```bash
-      # Ottieni storage account e container
-      STORAGE_ACCOUNT=$(terraform output -raw test_storage_account_name)
-      CONTAINER=$(terraform output -raw test_container_name)
-
-      # Crea file di test
-      echo "Test file 1" > /tmp/test1.txt
-      echo "Test file 2" > /tmp/test2.txt
-
-      # Upload blob
-      az storage blob upload \
-        -f /tmp/test1.txt \
-        -c $CONTAINER \
-        -n test1.txt \
-        --account-name $STORAGE_ACCOUNT
-
-      az storage blob upload \
-        -f /tmp/test2.txt \
-        -c $CONTAINER \
-        -n test/subfolder/test2.txt \
-        --account-name $STORAGE_ACCOUNT
-
-      # Test function
-      curl "https://$HOSTNAME/api/list-blobs" -H "x-functions-key: $FUNCTION_KEY"
-      curl "https://$HOSTNAME/api/list-blobs?path=test/" -H "x-functions-key: $FUNCTION_KEY"
-      ```
-- Con Piano Premium
-  Per production con Always On e VNet integration:
-  ```bash
-  terraform apply \
-    -var="storage_account_name=stfuncprod123" \
-    -var="test_storage_account_name=sttestprod123" \
-    -var="function_app_name=func-blob-prod" \
-    -var="sku_name=P1V2" \
-    -var="always_on=true"
-  ```
-- Con Metric Alerts
-  - Prima crea un Action Group:
+- Test della Function
+  1. Via HTTP
     ```bash
-    az monitor action-group create \
-      -g alnao-terraform-esempio05-functions \
-      -n function-alerts \
-      --short-name funcalert \
-      --email-receiver admin email=admin@example.com
-    ```
-  - Poi:
-    ```bash
-    ACTION_GROUP_ID=$(az monitor action-group show \
-      -g alnao-terraform-esempio05-functions \
-      -n function-alerts \
-      --query id -o tsv)
+    # Ottieni hostname
+    HOSTNAME=$(terraform output -raw function_app_hostname)
+    echo $HOSTNAME
 
-    terraform apply \
-      -var="enable_metric_alerts=true" \
-      -var="error_alert_threshold=5" \
-      -var="response_time_alert_threshold=5" \
-      -var="action_group_id=$ACTION_GROUP_ID"
+    # Get function key (come sopra)
+    FUNCTION_KEY=$(az functionapp keys list \
+      -g alnao-terraform-esempio05-functions \
+      -n  alnao-terraform-esempio05-functions \
+      --query "functionKeys.default" -o tsv)
+
+    # Test senza path
+    curl "https://$HOSTNAME/api/list-blobs" \
+      -H "x-functions-key: $FUNCTION_KEY"
+
+    # Test con path specifico
+    curl "https://$HOSTNAME/api/list-blobs?path=test/" \
+      -H "x-functions-key: $FUNCTION_KEY"
     ```
+  2. Upload blob di test
+
+    ```bash
+    # Ottieni storage account e container
+    STORAGE_ACCOUNT=$(terraform output -raw test_storage_account_name)
+    CONTAINER=$(terraform output -raw test_container_name)
+
+    # Crea file di test
+    echo "Test file 1" > /tmp/test1.txt
+    echo "Test file 2" > /tmp/test2.txt
+
+    # Upload blob
+    az storage blob upload \
+      -f /tmp/test1.txt \
+      -c $CONTAINER \
+      -n test1b.txt \
+      --account-name $STORAGE_ACCOUNT
+
+    az storage blob upload \
+      -f /tmp/test2.txt \
+      -c $CONTAINER \
+      -n test/subfolder/test2b.txt \
+      --account-name $STORAGE_ACCOUNT
+
+    # Get default host key
+    FUNCTION_KEY=$(az functionapp keys list \
+      -g alnao-terraform-esempio05-functions \
+      -n  alnao-terraform-esempio05-functions \
+      --query "functionKeys.default" -o tsv)
+    echo $FUNCTION_KEY
+
+    # Test function
+    HOSTNAME=$(terraform output -raw function_app_hostname)
+    curl "https://$HOSTNAME/api/list-blobs" -H "x-functions-key: $FUNCTION_KEY"
+    curl "https://$HOSTNAME/api/list-blobs?path=test/" -H "x-functions-key: $FUNCTION_KEY"
+    ```
+- Configurazione avanzata
+    - Con Piano Premium
+      Per production con Always On e VNet integration:
+      ```bash
+      terraform apply \
+        -var="storage_account_name=stfuncprod123" \
+        -var="test_storage_account_name=sttestprod123" \
+        -var="function_app_name=func-blob-prod" \
+        -var="sku_name=P1V2" \
+        -var="always_on=true"
+      ```
+    - Con Metric Alerts
+      - Prima crea un Action Group:
+        ```bash
+        az monitor action-group create \
+          -g alnao-terraform-esempio05-functions \
+          -n function-alerts \
+          --short-name funcalert \
+          --email-receiver admin email=admin@example.com
+        ```
+      - Poi:
+        ```bash
+        ACTION_GROUP_ID=$(az monitor action-group show \
+          -g alnao-terraform-esempio05-functions \
+          -n function-alerts \
+          --query id -o tsv)
+
+        terraform apply \
+          -var="enable_metric_alerts=true" \
+          -var="error_alert_threshold=5" \
+          -var="response_time_alert_threshold=5" \
+          -var="action_group_id=$ACTION_GROUP_ID"
+        ```
 - Rimozione di tutte le risorse terraform
   ```bash
   terraform destroy

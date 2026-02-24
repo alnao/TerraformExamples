@@ -21,6 +21,10 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 - Azure CLI installato e configurato (`az login`)
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
+  - La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 - (Opzionale) DNS Zone Azure per custom domain
 - (Opzionale) Log Analytics Workspace per diagnostics
 
@@ -71,15 +75,19 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
 
 
 ## Comandi
-- Inizializzazione
+1. Inizializzazione
     ```bash
     terraform init
     ```
-- Pianificazione
+  - La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
+2. Pianificazione
     ```bash
     terraform plan
     ```
-- Applicazione - Deploy Standard (senza WAF)
+3. Applicazione - Deploy Standard (senza WAF)
     ```bash
     terraform apply 
 
@@ -99,65 +107,65 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
     terraform output frontdoor_url
     # Output: https://afd-esempio04-endpoint-xxx.azurefd.net
     ```
-- Applicazione - Deploy Premium (con WAF)
-    ```bash
-    terraform apply \
-      -var="storage_account_name=miofd123" \
-      -var="frontdoor_sku=Premium_AzureFrontDoor" \
-      -var="enable_waf=true"
-    
-    # Visualizza l'URL e la WAF policy
-    terraform output frontdoor_url
-    terraform output waf_policy_id
-    ```
-- Con custom domain
-    1. Prima, crea una DNS Zone:
-        ```bash
-        az network dns zone create \
-          --resource-group alnao-terraform-esempio04-frontdoor \
-          --name example.com
-        ```
-    2. Poi applica con il dominio:
+    - Applicazione - Deploy Premium (con WAF)
         ```bash
         terraform apply \
           -var="storage_account_name=miofd123" \
-          -var="custom_domain_name=www.example.com" \
-          -var="dns_zone_id=/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Network/dnszones/example.com"
+          -var="frontdoor_sku=Premium_AzureFrontDoor" \
+          -var="enable_waf=true"
         
-        # Visualizza l'URL del custom domain
-        terraform output custom_domain_url
+        # Visualizza l'URL e la WAF policy
+        terraform output frontdoor_url
+        terraform output waf_policy_id
         ```
-- Con monitoring
-    1. Crea Log Analytics Workspace:
+    - Con custom domain
+        1. Prima, crea una DNS Zone:
+            ```bash
+            az network dns zone create \
+              --resource-group alnao-terraform-esempio04-frontdoor \
+              --name example.com
+            ```
+        2. Poi applica con il dominio:
+            ```bash
+            terraform apply \
+              -var="storage_account_name=miofd123" \
+              -var="custom_domain_name=www.example.com" \
+              -var="dns_zone_id=/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Network/dnszones/example.com"
+            
+            # Visualizza l'URL del custom domain
+            terraform output custom_domain_url
+            ```
+    - Con monitoring
+        1. Crea Log Analytics Workspace:
+            ```bash
+            az monitor log-analytics workspace create \
+              --resource-group alnao-terraform-esempio04-frontdoor \
+              --workspace-name fd-logs
+            ```
+        2. Applica con diagnostics:
+            ```bash
+            terraform apply \
+              -var="storage_account_name=miofd123" \
+              -var="enable_diagnostic_settings=true" \
+              -var="log_analytics_workspace_id=/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.OperationalInsights/workspaces/fd-logs"
+            ```
+    - Purge cache
         ```bash
-        az monitor log-analytics workspace create \
+        # Purge cache per tutto il contenuto
+        az afd endpoint purge \
           --resource-group alnao-terraform-esempio04-frontdoor \
-          --workspace-name fd-logs
+          --profile-name afd-esempio04 \
+          --endpoint-name afd-esempio04-endpoint \
+          --content-paths '/*'
+        
+        # Purge cache per un path specifico
+        az afd endpoint purge \
+          --resource-group alnao-terraform-esempio04-frontdoor \
+          --profile-name afd-esempio04 \
+          --endpoint-name afd-esempio04-endpoint \
+          --content-paths '/images/*'
         ```
-    2. Applica con diagnostics:
-        ```bash
-        terraform apply \
-          -var="storage_account_name=miofd123" \
-          -var="enable_diagnostic_settings=true" \
-          -var="log_analytics_workspace_id=/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.OperationalInsights/workspaces/fd-logs"
-        ```
-- Purge cache
-    ```bash
-    # Purge cache per tutto il contenuto
-    az afd endpoint purge \
-      --resource-group alnao-terraform-esempio04-frontdoor \
-      --profile-name afd-esempio04 \
-      --endpoint-name afd-esempio04-endpoint \
-      --content-paths '/*'
-    
-    # Purge cache per un path specifico
-    az afd endpoint purge \
-      --resource-group alnao-terraform-esempio04-frontdoor \
-      --profile-name afd-esempio04 \
-      --endpoint-name afd-esempio04-endpoint \
-      --content-paths '/images/*'
-    ```
-- Verifica stato e configurazione
+4. Verifica stato e configurazione
     ```bash
     # Stato del Front Door
     az afd profile show \
@@ -202,7 +210,7 @@ Questo esempio mostra come creare una distribuzione Azure Front Door per servire
       --query healthCheckStatus
 
     ```
-- Distruzione
+5. Distruzione
     ```bash
     terraform destroy
     ```

@@ -37,6 +37,7 @@ log_success "Prerequisiti verificati"
 # Esegui il deploy con Terraform
 log_info "Eseguo il deploy con Terraform..."
 terraform init
+export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 terraform plan -out=tfplan
 terraform apply -auto-approve   tfplan
 log_success "Deploy Terraform completato"

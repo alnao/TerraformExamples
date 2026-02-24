@@ -26,6 +26,10 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
    - Resource Groups
    - Storage Accounts
    - Storage Containers
+4. La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 
 Le **Variabili principali** del template sono
 - `storage_account_name` : Nome univoco dello storage account (3-24 caratteri, solo minuscole e numeri)
@@ -58,6 +62,7 @@ Monitora sempre i costi nel Azure Portal.
 1. Inizializzazione
     ```bash
     cd AZURE-Esempio01-Storage
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
     terraform init
     ```
 2. Configurazione delle variabili (facoltativo)
@@ -69,45 +74,8 @@ Monitora sempre i costi nel Azure Portal.
     resource_group_name  = "rg-my-storage"
     location            = "West Europe"
 
-    # Configurazione storage
-    account_tier      = "Standard"
-    replication_type  = "LRS"  # LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS
+    # vedere tutte le altre variabili presenti nel "terraform.tfvars.example"
 
-    # Container da creare
-    containers = [
-    {
-        name        = "documents"
-        access_type = "private"
-    },
-    {
-        name        = "public-files"
-        access_type = "blob"
-    }
-    ]
-
-    # Configurazioni di sicurezza
-    allow_public_access     = false
-    public_network_access   = true
-    min_tls_version        = "TLS1_2"
-
-    # Versioning e backup
-    enable_versioning           = true
-    enable_soft_delete          = true
-    soft_delete_retention_days  = 30
-
-    # Lifecycle management (opzionale)
-    enable_lifecycle_policy        = true
-    lifecycle_cool_after_days     = 30
-    lifecycle_archive_after_days  = 90
-    lifecycle_delete_after_days   = 365
-
-    # Tags personalizzati
-    tags = {
-    Environment = "production"
-    Project     = "my-project"
-    Owner       = "team-name"
-    CostCenter  = "IT-001"
-    }
     ```
 3. Pianificazione
     ```bash
@@ -117,54 +85,56 @@ Monitora sempre i costi nel Azure Portal.
     ```bash
     terraform apply
     ```
-5. Distruzione (quando necessario)
+
+
+5. Integrazione con applicazioni
+    - Azure CLI
+        ```bash
+
+        # Create & upload file
+        echo "Ciao" > /tmp/testfileXazure.txt
+        az storage blob upload --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileXazure.txt
+
+        # Download file
+        az storage blob download --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileFromAzure.txt
+        cat /tmp/testfileFromAzure.txt 
+
+        # URL pubblici (solo per container "public-assets")
+        # Ottieni la URL base
+        terraform output storage_account_primary_blob_endpoint
+        AZ_URL=$(terraform output storage_account_primary_blob_endpoint)
+        # URL formato: https://alnaoterraformesempio01.blob.core.windows.net/public-assets/nomefile.jpg
+        # curl "$AZ_URL/documents/testfile.txt"
+        curl https://alnaoterraformesempio01.blob.core.windows.net/documents/testfile.txt
+        # potrebbe non andare con errore "Public access is not permitted on this storage account" per mancanza di permessi
+        ```
+    - .NET
+        ```csharp
+        var connectionString = "DefaultEndpointsProtocol=https;AccountName=...";
+        var blobServiceClient = new BlobServiceClient(connectionString);
+        ```
+    - Python
+        ```python
+        from azure.storage.blob import BlobServiceClient
+        connection_string = "DefaultEndpointsProtocol=https;AccountName=..."
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        ```
+    - Esempi di utilizzo degli output
+        ```bash
+        # Visualizza tutti gli output (esclusi i sensitive)
+        terraform output
+
+        # Visualizza un output specifico
+        terraform output storage_account_name
+
+        # Visualizza output sensitive
+        terraform output -raw storage_account_primary_access_key
+        ```
+6. Distruzione (quando necessario)
     ```bash
     terraform destroy
     ```
 
-## Integrazione con applicazioni
-- .NET
-    ```csharp
-    var connectionString = "DefaultEndpointsProtocol=https;AccountName=...";
-    var blobServiceClient = new BlobServiceClient(connectionString);
-    ```
-- Python
-    ```python
-    from azure.storage.blob import BlobServiceClient
-    connection_string = "DefaultEndpointsProtocol=https;AccountName=..."
-    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-    ```
-- Azure CLI
-    ```bash
-
-    # Create & upload file
-    echo "Ciao" > /tmp/testfileXazure.txt
-    az storage blob upload --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileXazure.txt
-
-    # Download file
-    az storage blob download --account-name alnaoterraformesempio01 --container-name documents --name testfile.txt --file /tmp/testfileFromAzure.txt
-    cat /tmp/testfileFromAzure.txt 
-
-    # URL pubblici (solo per container "public-assets")
-    # Ottieni la URL base
-    terraform output storage_account_primary_blob_endpoint
-    AZ_URL=$(terraform output storage_account_primary_blob_endpoint)
-    # URL formato: https://alnaoterraformesempio01.blob.core.windows.net/public-assets/nomefile.jpg
-    # curl "$AZ_URL/documents/testfile.txt"
-    curl https://alnaoterraformesempio01.blob.core.windows.net/documents/testfile.txt
-    # potrebbe non andare con errore "Public access is not permitted on this storage account" per mancanza di permessi
-    ```
-- Esempi di utilizzo degli output
-    ```bash
-    # Visualizza tutti gli output (esclusi i sensitive)
-    terraform output
-
-    # Visualizza un output specifico
-    terraform output storage_account_name
-
-    # Visualizza output sensitive
-    terraform output -raw storage_account_primary_access_key
-    ```
 
 ## Confronto con AWS S3
 

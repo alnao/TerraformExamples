@@ -33,6 +33,10 @@ Ogni esempio è contenuto in una cartella specifica e include:
             ```
             subscription_id = "xxxx-xxxx-xxxx-xxxx-xxxx"
             ```
+         - La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata: in azurerm v3, il provider legge automaticamente la subscription attiva dall'Azure CLI. In azurerm v4 questo comportamento è stato rimosso e bisogna specificarla esplicitamente o tramite la variabile d'ambiente ARM_SUBSCRIPTION_ID.
+            ```bash
+            export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+            ```
       - Per alcuni termplate (Esempio08) necessita pacchetti specifici:
          ```sudo npm install -g azure-functions-core-tools@4 --unsafe-perm true```
       - Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage`, modificare il file `backend.tf` per personalizzare questa configurazione.
@@ -67,7 +71,21 @@ Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-
 
 
 ## Esempi Azure (Microsoft Azure)
-In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempioXX`. Lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage` del `alnao-terraform-resource-group`, modificare i file `backend.tf` dei vari esempi per personalizzare questa configurazione.
+In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempioXX`. 
+
+
+Lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage` del `alnao-terraform-resource-group`, modificare i file `backend.tf` dei vari esempi per personalizzare questa configurazione.
+
+
+La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata: in azurerm v3, il provider legge automaticamente la subscription attiva dall'Azure CLI. In azurerm v4 questo comportamento è stato rimosso — bisogna specificarla esplicitamente o tramite la variabile d'ambiente ARM_SUBSCRIPTION_ID.
+   ```bash
+   export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+   ```
+
+
+In fase di *destroy*, Azure e Terraform ritornano l'errore `Error: Error acquiring the state lock, Error message: state blob is already locked`, in questo caso è opssibile bloccare via CLI oppure sbloccalo direttamente via Azure Portal accedendo su `Storage Account`, entrando nella vista `Containers`, selezionando il file `.tfstate` e eseguire il comando `Break Lease`.
+
+
 
 - **AZURE-Esempio01-Storage**: crea un Azure Storage Account con container blob (equivalente ad AWS S3), con configurazioni avanzate per sicurezza, versioning, soft delete, lifecycle management e replica geografica
 - **AZURE-Esempio02-IstanzeVM**: crea una Virtual Machine Linux (Ubuntu 22.04) con Virtual Network, Public IP opzionale, Network Security Group, autenticazione SSH o password, boot diagnostics, managed disk aggiuntivo opzionale e supporto cloud-init
@@ -80,6 +98,9 @@ In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempio
 - **AZURE-Esempio09-CosmosMongo**: database CosmosDB con API MongoDB, consistency levels configurabili (5 livelli), geo-replication multi-region, autoscaling, modalità serverless, backup periodic/continuous, free tier (400 RU/s gratuiti) e Analytical Storage per Synapse Link
 - **AZURE-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
 - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+
+
+
 
 ## Esempi DevOps & CI/CD
 - **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*

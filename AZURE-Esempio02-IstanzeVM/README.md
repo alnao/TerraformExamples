@@ -19,7 +19,11 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 - Azure CLI installato e configurato (`az login`)
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
-- (Opzionale) Coppia di chiavi SSH
+- Coppia di chiavi SSH (vedere sotto il comando di generazione)
+- La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 
 **Variabili principali**
 - `location`: Regione Azure (default: West Europe)
@@ -54,6 +58,7 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 ```bash
 # Genera una nuova coppia di chiavi
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure-vm-key -N ""
+chmod 400 ~/.ssh/azure-vm-key
 # La chiave pubblica sarà in ~/.ssh/azure-vm-key.pub
 ```
 
@@ -70,11 +75,12 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure-vm-key -N ""
 
 
 ## Comandi
-- Inizializzazione
+1. Inizializzazione
     ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
     terraform init
     ```
-- Pianificazione
+2. Pianificazione
     ```bash
     # Con SSH key
     terraform plan -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)"
@@ -82,7 +88,8 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure-vm-key -N ""
     # Con password (meno sicuro)
     terraform plan -var="disable_password_authentication=false" -var="admin_password=YourStrongPassword123!"
     ```
-- Applicazione
+    - nota: eseguire il comando `plan` senza indicare la variabile genera errore perchè il parametro è obbligatorio
+3. Applicazione del 
     ```bash
     # Con SSH key (raccomandato)
     terraform apply -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)"
@@ -90,36 +97,42 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure-vm-key -N ""
     # Con password
     terraform apply -var="disable_password_authentication=false" -var="admin_password=YourStrongPassword123!"
     ```
-- Esempio con custom data (installazione web server)
-    - Creare un file `cloud-init.txt`:
+    - nota: eseguire il comando `apply` senza indicare la variabile genera errore perchè il parametro è obbligatorio
+4. Esempio con custom data (installazione web server)
+    - Creare un file `/tmp/azure-cloud-init.txt`:
         ```bash
         #!/bin/bash
-        apt-get update
-        apt-get install -y nginx
-        systemctl start nginx
-        systemctl enable nginx
+        sudo apt-get update
+        sudo apt-get install -y nginx
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+        sudo chmod 777 /var/www/html/
         echo "<h1>Hello from Azure VM</h1>" > /var/www/html/index.html
         ```
     - Applicare con:
         ```bash
         terraform apply \
         -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)" \
-        -var="custom_data=$(cat cloud-init.txt)"
+        -var="custom_data=$(cat /tmp/azure-cloud-init.txt)"
         ```
-- Connessione alla VM
+    - Nota: a me non funziona la configurazione del `custom_data` in questo modo quindi bisogna lanciare i comandi a mano!
+5. Connessione alla VM
     ```bash
     # Dopo il deployment, connettiti via SSH
-    ssh -i ~/.ssh/azure-vm-key azureuser@<PUBLIC_IP>
+    VM_PUBLIC_IP=$(terraform output -raw public_ip_address)
+    echo $VM_PUBLIC_IP
+    curl $VM_PUBLIC_IP
+    ssh -i ~/.ssh/azure-vm-key azureuser@$VM_PUBLIC_IP
 
     # Il PUBLIC_IP è disponibile nell'output
     terraform output public_ip_address
     ```
-- Distruzione (con chiave fittizia se serve!)
+6. Distruzione (con chiave fittizia se serve!)
     ```bash
     ssh-keygen -t rsa -b 2048 -f /tmp/temp_azure_key -N "" -C "temp@destroy" && cat /tmp/temp_azure_key.pub
-    terraform destroy -var="ssh_public_key=$(cat /tmp/temp_azure_key.pub)" -auto-approve
+    terraform destroy -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)" -auto-approve
     ```
-- Opzioni avanzate
+7. Opzioni avanzate
     - Con disco dati aggiuntivo
         ```bash
         terraform apply \
@@ -141,15 +154,13 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure-vm-key -N ""
         -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)" \
         -var="vm_size=Standard_D2s_v3"
         ```
-- Note di sicurezza: ⚠️ **IMPORTANTE**: L'esempio di default permette accesso SSH da qualsiasi IP (0.0.0.0/0). In produzione, limitare `ssh_source_addresses`:
+- Note di sicurezza: ⚠️ **IMPORTANTE**: L'esempio di default permette accesso SSH da qualsiasi IP (0.0.0.0/0). In produzione, limitare con il parametro `ssh_source_addresses`:
     ```bash
-    terraform apply \
-    -var="ssh_public_key=$(cat ~/.ssh/azure-vm-key.pub)" \
     -var='ssh_source_addresses=["YOUR_IP/32"]'
     ```
 
 
-## Immagini Linux supportate
+## Immagini Linux disponibili:
 - Ubuntu
     ```hcl
     image_publisher = "Canonical"

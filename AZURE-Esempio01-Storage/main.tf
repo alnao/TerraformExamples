@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.50.0"
     }
   }
 }
@@ -64,7 +64,7 @@ resource "azurerm_storage_account" "main" {
 resource "azurerm_storage_container" "main" {
   count                 = length(var.containers)
   name                  = var.containers[count.index].name
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_name  = azurerm_storage_account.main.name 
   container_access_type = var.containers[count.index].access_type
 }
 

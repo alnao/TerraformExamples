@@ -20,6 +20,10 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 - Azure CLI installato e configurato (`az login`)
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
+- La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 
 **Variabili principali**
 - `location`: Regione Azure (default: West Europe)
@@ -58,9 +62,11 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
 
 
 ## Comandi
-- Inizializzazione
+1. Inizializzazione e creazione dello stack
     ```bash
     terraform init
+
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
     terraform plan
 
@@ -72,72 +78,73 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
     SITE_URL=$(terraform output -raw website_url)
     firefox $SITE_URL
     ```
-  - Applicazione - Deploy base con nome specifico di un storace
-      ```bash
-      terraform apply -var="storage_account_name=miosito123web"
-      
-      # Visualizza l'URL del sito
-      terraform output website_url
-      # Output: https://miosito123web.z6.web.core.windows.net
-      ```
-  - Applicazione - Con Azure CDN per dominio personalizzato e performance
-      ```bash
-      terraform apply \
-        -var="storage_account_name=miosito123web" \
-        -var="enable_cdn=true"
-      
-      # Ottieni l'URL del CDN
-      terraform output cdn_endpoint_url
-      ```
-- Upload di file personalizzati
-    - Crea una struttura locale:
-        ```bash
-        # Crea directory per i file
-        mkdir -p website-files
-        
-        # Crea file personalizzati
-        cat > website-files/style.css <<EOF
-        body { font-family: Arial, sans-serif; }
-        EOF
-        
-        cat > website-files/app.js <<EOF
-        console.log('Hello from Azure!');
-        EOF
-        ```
-    - Configura in `terraform.tfvars`:
-        ```hcl
-        website_files = {
-          "css/style.css" = {
-            source       = "./website-files/style.css"
-            content_type = "text/css"
-          }
-          "js/app.js" = {
-            source       = "./website-files/app.js"
-            content_type = "application/javascript"
-          }
-          "images/logo.png" = {
-            source       = "./website-files/logo.png"
-            content_type = "image/png"
-          }
-        }
-        ```
-    - Applica:
+2. Creazione con parametri specifici
+    - Deploy base con nome specifico di un storage
         ```bash
         terraform apply -var="storage_account_name=miosito123web"
+        
+        # Visualizza l'URL del sito
+        terraform output website_url
+        # Output: https://miosito123web.z6.web.core.windows.net
         ```
-- Con dominio personalizzato
-    1. Abilita CDN e configura il dominio:
+    - Con Azure CDN per dominio personalizzato e performance
         ```bash
         terraform apply \
           -var="storage_account_name=miosito123web" \
-          -var="enable_cdn=true" \
-          -var="custom_domain_name=www.miodominio.com"
+          -var="enable_cdn=true"
+        
+        # Ottieni l'URL del CDN
+        terraform output cdn_endpoint_url
         ```
-    2. Configura il DNS con un record CNAME:
-        ```
-        CNAME www.miodominio.com -> miosito123web-endpoint.azureedge.net
-        ```
-- Upload manuale di file con Azure CLI
+    - Upload di file personalizzati
+      - Crea una struttura locale:
+          ```bash
+          # Crea directory per i file
+          mkdir -p website-files
+          
+          # Crea file personalizzati
+          cat > website-files/style.css <<EOF
+          body { font-family: Arial, sans-serif; }
+          EOF
+          
+          cat > website-files/app.js <<EOF
+          console.log('Hello from Azure!');
+          EOF
+          ```
+      - Configura in `terraform.tfvars`:
+          ```hcl
+          website_files = {
+            "css/style.css" = {
+              source       = "./website-files/style.css"
+              content_type = "text/css"
+            }
+            "js/app.js" = {
+              source       = "./website-files/app.js"
+              content_type = "application/javascript"
+            }
+            "images/logo.png" = {
+              source       = "./website-files/logo.png"
+              content_type = "image/png"
+            }
+          }
+          ```
+      - Applica:
+          ```bash
+          terraform apply -var="storage_account_name=miosito123web"
+          ```
+    - Con dominio personalizzato
+      1. Abilita CDN e configura il dominio:
+          ```bash
+          terraform apply \
+            -var="storage_account_name=miosito123web" \
+            -var="enable_cdn=true" \
+            -var="custom_domain_name=www.miodominio.com"
+          ```
+      2. Configura il DNS con un record CNAME:
+          ```
+          CNAME www.miodominio.com -> miosito123web-endpoint.azureedge.net
+          ```
+3. Upload manuale di file con Azure CLI
     ```bash
     # Upload singolo file
     az storage blob upload \
@@ -154,7 +161,7 @@ Nota: lo stato remoto degli esempi viene salvato nello storage-container `alnaot
       --source ./website-files \
       --pattern "*"
     ```
-- Distruzione
+4. Distruzione
     ```bash
     terraform destroy
     ```
