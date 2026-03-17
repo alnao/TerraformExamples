@@ -4,7 +4,7 @@ Test script per verificare la funzione Azure localmente
 Richiede: pip install azure-functions
 """
 import json
-from function_app import app
+from function.function_app import app
 
 def test_logger_function():
     """Test della funzione logger con payload di esempio"""

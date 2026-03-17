@@ -1,8 +1,8 @@
 # Terraform Examples
   <p align="center">
-   <img src="https://img.shields.io/badge/Terraform-623CE4?style=for-the-badge&logo=terraform&logoColor=white"   height=60/>
-   <img src="https://img.shields.io/badge/AWS-%23FF9900?style=for-the-badge&logo=AmazonAWS&logoColor=white"    height=60/>
-   <img src="https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white"   height=60/>
+   <img src="https://img.shields.io/badge/Terraform-623CE4?logo=terraform&logoColor=white"   height=32/>
+   <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white"    height=32/>
+   <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white"   height=32/>
   </p>
 
 **Terraform** è uno strumento open source per l'Infrastructure as Code (IaC) che consente di definire, gestire e versionare infrastrutture cloud tramite file di configurazione testuali. Supporta numerosi provider, tra cui AWS, Azure, Google Cloud e molti altri.
@@ -19,9 +19,9 @@ Ogni esempio è contenuto in una cartella specifica e include:
 - Account cloud attivo e funzionante (AWS, Azure, ecc.), 
    - ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
 - Per ogni cloud attivo, è necessario avere le credenziali configurate:
-   - Per AWS devono essere configurate le credenziali tramite il comando `aws configure` della AWS CLI
+   - Per **AWS** devono essere configurate le credenziali tramite il comando `aws configure` della AWS CLI
       - Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-aws-alnao`, modificare il file `backend.ft` per personalizzare questa configurazione.
-   - Per Azure devono essere configurate le credenziali tramite il comando `az login` della Azure CLI
+   - Per **Azure** devono essere configurate le credenziali tramite il comando `az login` della Azure CLI
       - In ambiente di sviluppo/laboratorio si può configurare la subscription di default con la procedura:
          - Eseguire la login da cli `az login`
          - Recuperare la lista delle subscription `az account list --output table`
@@ -48,66 +48,45 @@ Ogni esempio è contenuto in una cartella specifica e include:
             --blob-name esempio04frontdoor.tfstate
             ```
             oppure da console web selezionando il file `esempioXX.tfstate` e usando la funzionalità "Break lease" (se disponibile)
+        
       
 
-## Esempi AWS (Amazon Web Services)
-Nota: lo stato remoto di tutti gli esempi vengono salvati nel bucket `terraform-aws-alnao`, modificare il file `backend.ft` per personalizzare questa configurazione.
+## Elenco degli esempi
 
-- **AWS-Esempio01-BucketS3**: crea un bucket S3 parametrico su AWS, con region di default Francoforte (eu-central-1), salvataggio dello stato remoto su S3, tagging e alcune opzioni configurabili
-- **AWS-Esempio02-IstanzaEC2**: crea un'istanza EC2 con Amazon Linux 2023, Security Group configurabile per SSH/HTTP/HTTPS, supporto chiavi SSH, volumi EBS cifrati, user data per inizializzazione e Elastic IP opzionale
-- **AWS-Esempio02-IstanzaEC2-module**: crea una istanza EC2 usando il modulo ufficiale disponibile su `registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws` 
-- **AWS-Esempio03-WebSiteS3**: hosting di sito web statico su S3 con configurazione automatica di accesso pubblico, CORS, versioning, custom error pages e upload automatico di file HTML
-- **AWS-Esempio04-CloudFront**: distribuzione CloudFront CDN con origine S3, HTTPS nativo, Origin Access Control (OAC), compressione automatica, custom error responses, WAF opzionale e supporto domini personalizzati con certificati ACM
-- **AWS-Esempio05-Lambda**: Lambda function Python 3.11 che lista oggetti in bucket S3 con parametro path, Function URL per invocazione HTTP diretta, IAM role con accesso S3, CloudWatch Logs, CORS configurato, supporto VPC, Dead Letter Queue opzionale e CloudWatch Alarms per monitoring
-- **AWS-Esempio06-EventBridge**: EventBridge Rule che triggera Lambda quando file viene caricato in S3, pattern matching per filtrare eventi specifici, input transformer per personalizzare payload, retry policy configurabile, Dead Letter Queue per eventi falliti e CloudWatch Alarms per monitoring
-- **AWS-Esempio07-StepFunction**: Step Function State Machine che copia file da bucket A a bucket B e invoca Lambda per logging, trigger automatico via EventBridge su S3 upload, gestione errori con catch e retry, CloudWatch Logs con X-Ray tracing opzionale e workflow orchestration completa
-- **AWS-Esempio08-ApiGateway**: API Gateway REST con due metodi - GET /files (lista file da S3) e POST /calculate (calcola ipotenusa dati cateti), integrazione Lambda proxy, CORS configurato, Usage Plan con rate limiting, API Key opzionale, CloudWatch Logs e deployment automatico con stage
-- **AWS-Esempio09-DynamoDB**: tabella DynamoDB NoSQL con billing flessibile (On-Demand/Provisioned), Global/Local Secondary Indexes, DynamoDB Streams, Point-in-Time Recovery, autoscaling, TTL e replica multi-region con Global Tables. 
-   - in aggiunta è presente un template per creare una lambda eseguita al caricamento di un file in un bucket S3 e i dati vengono salvati nella tabella Dynamo
-- **AWS-Esempio10-RDS**: *progetto in fase di revisione,* cluster RDS Aurora MySQL 8.0 più piccolo disponibile (db.t3.small) con accesso pubblico configurabile, Security Group con porta 3306, backup automatici (7 giorni), CloudWatch Logs (audit, error, general, slowquery), Parameter Groups personalizzati, Enhanced Monitoring opzionale, Performance Insights opzionale e CloudWatch Alarms per CPU/connessioni/memoria
-- **AWS-Esempio11-LambdaApplicationS3Utils**: *progetto in fase di revisione,* applicazione serverless completa con 8 Lambda Functions (presigned URL, extract ZIP, Excel to CSV, upload to RDS, SFTP send, S3 scan, list/search files), S3 Bucket con public access policy, 2 DynamoDB Tables (logs e scan), RDS Aurora MySQL, API Gateway REST con 7 endpoint, EventBridge per orchestrazione e scheduling (scansione S3 giornaliera), Secrets Manager per credenziali RDS, SSM Parameter Store per chiave SFTP RSA, CloudWatch con alarms e logging, IAM con policy granulari e tagging completo. L'applicazione gestisce l'intero ciclo di vita dei file: upload tramite presigned URL, elaborazione automatica (ZIP extraction, Excel conversion), caricamento dati su database, invio via SFTP e API per ricerca/elenco file
-- **AWS-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+⚠️ **Nota importante**: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attenzione prima di eseguire qualsiasi comando ⚠️
 
+**Note sullo stato remoto:**
+- **AWS**: lo stato remoto viene salvato nel bucket `terraform-aws-alnao`, modificare il file `backend.tf` per personalizzare.
+- **Azure**: lo stato remoto viene salvato nello storage-container `alnaoterraformstorage` del `alnao-terraform-resource-group`, modificare il file `backend.tf` per personalizzare. In tutti gli esempi Azure, i Resource Group creati hanno nome `alnao-terraform-esempioXX`.
 
-## Esempi Azure (Microsoft Azure)
-In tutti gli esempi, i Resource Group creati hanno nome `alnao-terraform-esempioXX`. 
-
-
-Lo stato remoto degli esempi viene salvato nello storage-container `alnaoterraformstorage` del `alnao-terraform-resource-group`, modificare i file `backend.tf` dei vari esempi per personalizzare questa configurazione.
-
-
-La *nuova* versione del *provider terraform azure* necessita sempre la subscription configurata: in azurerm v3, il provider legge automaticamente la subscription attiva dall'Azure CLI. In azurerm v4 questo comportamento è stato rimosso — bisogna specificarla esplicitamente o tramite la variabile d'ambiente ARM_SUBSCRIPTION_ID.
-   ```bash
-   export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-   ```
-
-
-In fase di *destroy*, Azure e Terraform ritornano l'errore `Error: Error acquiring the state lock, Error message: state blob is already locked`, in questo caso è opssibile bloccare via CLI oppure sbloccalo direttamente via Azure Portal accedendo su `Storage Account`, entrando nella vista `Containers`, selezionando il file `.tfstate` e eseguire il comando `Break Lease`.
-
-
-
-- **AZURE-Esempio01-Storage**: crea un Azure Storage Account con container blob (equivalente ad AWS S3), con configurazioni avanzate per sicurezza, versioning, soft delete, lifecycle management e replica geografica
-- **AZURE-Esempio02-IstanzeVM**: crea una Virtual Machine Linux (Ubuntu 22.04) con Virtual Network, Public IP opzionale, Network Security Group, autenticazione SSH o password, boot diagnostics, managed disk aggiuntivo opzionale e supporto cloud-init
-- **AZURE-Esempio03-WebsiteBlob**: hosting di sito web statico su Blob Storage con HTTPS nativo, CORS configurato, versioning, soft delete, Azure CDN opzionale per performance e supporto domini personalizzati con certificati gestiti
-- **AZURE-Esempio04-FrontDoor**: distribuzione Azure Front Door (Standard/Premium) con origine Blob Storage, HTTPS automatico, Anycast routing, Rules Engine per caching, WAF integrato opzionale con versione Premium SKU, health probes, DDoS protection e certificati SSL gestiti
-- **AZURE-Esempio05-Functions**: Azure Function Python 3.11 che lista blob in Storage Container con parametro path, HTTP Trigger per invocazione REST, Managed Identity per accesso storage, Application Insights per monitoring, CORS configurato, supporto Consumption/Premium plan e Metric Alerts opzionali
-- **AZURE-Esempio06-EventGrid**: Event Grid System Topic su Storage Account che triggera Function quando blob viene creato, Event Grid Subscription con filtri avanzati, batching configurabile, retry policy, Dead Letter destination opzionale e integrazione Application Insights per monitoring
-- **AZURE-Esempio07-LogicApps**: *progetto in fase di revisione,* Logic App Workflow che copia blob da storage A a B e invoca Function per logging, trigger automatico quando blob viene aggiunto, API Connection per Blob Storage, Managed Identity per accesso sicuro, orchestrazione visuale e integrazione completa con servizi Azure
-- **AZURE-Esempio08-APIManagement**: API Management (Consumption SKU) con due API - GET /api/files (lista blob) e POST /api/calculate (calcola ipotenusa), backend Azure Functions, API Operations con policies personalizzate, Application Insights logger, Named Values per configurazione e throttling/quota opzionali
-- **AZURE-Esempio09-CosmosMongo**: database CosmosDB con API MongoDB, consistency levels configurabili (5 livelli), geo-replication multi-region, autoscaling, modalità serverless, backup periodic/continuous, free tier (400 RU/s gratuiti) e Analytical Storage per Synapse Link
-- **AZURE-Esempio12-Annotazioni**: *progetto in fase di revisione, chissà se mai lo finirò* 
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
-
-
-
-
-## Esempi DevOps & CI/CD
-- **DEVOPS-Esempio01-Pipeline**: *progetto in fase di revisione*
-
-## Esempi Container & Orchestrazione
-- **DOCKER-Esempio01-Nginx**: crea un container Docker *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, mappando la porta 8001 e montando una directory locale per i file web
-- **KUBERNETES-Esempio01-Nginx**: crea un deployment Kubernetes *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, usando ConfigMap per i file web, Service con NodePort e supporto per scaling automatico (richiede cluster Kubernetes locale come minikube o kind)
+| Cloud | Esempio | Dettagli |
+|:---:|---|---|
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [BucketS3](AWS-Esempio01-BucketS3/) | Crea un bucket S3 su region di Francoforte (eu-central-1), tagging e alcune opzioni configurabili <br> **Servizi**: S3 <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [IstanzaEC2](AWS-Esempio02-IstanzaEC2/) | Crea un'istanza EC2 con Amazon Linux 2023, Security Group configurabile per SSH/HTTP/HTTPS, supporto chiavi SSH, volumi EBS cifrati, user data per inizializzazione e Elastic IP opzionale <br> **Servizi**: EC2, VPC, EBS, IAM <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [IstanzaEC2-module](AWS-Esempio02-IstanzaEC2-module/) | Crea una istanza EC2 usando il modulo ufficiale disponibile su `registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws` <br> **Servizi**: EC2 (modulo ufficiale Terraform) <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [WebSiteS3](AWS-Esempio03-WebSiteS3/) | Hosting di sito web statico su S3 con configurazione automatica di accesso pubblico, CORS, versioning, custom error pages e upload automatico di file HTML <br> **Servizi**: S3 (Static Website Hosting) <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [CloudFront](AWS-Esempio04-CloudFront/) | Distribuzione CloudFront CDN con origine S3, HTTPS nativo, Origin Access Control (OAC), compressione automatica, custom error responses, WAF opzionale e supporto domini personalizzati con certificati ACM <br> **Servizi**: CloudFront, S3, ACM, WAF <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [Lambda](AWS-Esempio05-Lambda/) | Lambda function Python 3.11 che lista oggetti in bucket S3 con parametro path, Function URL per invocazione HTTP diretta, CORS configurato, supporto VPC, Dead Letter Queue opzionale e CloudWatch Alarms <br> **Servizi**: Lambda, S3, IAM, CloudWatch <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [EventBridge](AWS-Esempio06-EventBridge/) | EventBridge Rule che triggera Lambda quando file viene caricato in S3, pattern matching, input transformer, retry policy configurabile, Dead Letter Queue e CloudWatch Alarms <br> **Servizi**: EventBridge, Lambda, S3, SQS, CloudWatch <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [StepFunction](AWS-Esempio07-StepFunction/) | Step Function State Machine che copia file da bucket A a bucket B e invoca Lambda per logging, trigger automatico via EventBridge su S3 upload, gestione errori con catch e retry, X-Ray tracing opzionale <br> **Servizi**: Step Functions, Lambda, S3, EventBridge, CloudWatch <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [ApiGateway](AWS-Esempio08-ApiGateway/) | API Gateway REST con due metodi - GET /files (lista file da S3) e POST /calculate (calcola ipotenusa dati cateti), integrazione Lambda proxy, CORS, Usage Plan con rate limiting, API Key opzionale <br> **Servizi**: API Gateway, Lambda, S3, CloudWatch <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [DynamoDB](AWS-Esempio09-DynamoDB/) | Tabella DynamoDB NoSQL con billing flessibile, Global/Local Secondary Indexes, DynamoDB Streams, Point-in-Time Recovery, autoscaling, TTL e Global Tables. Include Lambda trigger su S3 upload per salvare dati in DynamoDB <br> **Servizi**: DynamoDB, Lambda, S3, IAM, CloudWatch <br> Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [RDS](AWS-Esempio10-RDS/) | Cluster RDS Aurora MySQL 8.0 (db.t3.small) con accesso pubblico configurabile, Security Group, backup automatici, CloudWatch Logs, Parameter Groups, Enhanced Monitoring e Performance Insights opzionali <br> **Servizi**: RDS Aurora, VPC, CloudWatch <br> ⚠️ *In fase di revisione* — Ultimo aggiornamento: Dicembre 2025 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [LambdaApplication](AWS-Esempio11-LambdaApplicationS3Utils/) | Applicazione serverless completa: 8 Lambda Functions, S3, 2 DynamoDB Tables, RDS Aurora MySQL, API Gateway REST con 7 endpoint, EventBridge, Secrets Manager, SSM Parameter Store, CloudWatch. Gestisce l'intero ciclo di vita dei file <br> **Servizi**: Lambda, S3, DynamoDB, RDS, API Gateway, EventBridge, Secrets Manager, SSM, CloudWatch, IAM <br> ⚠️ *In fase di revisione* — Ultimo aggiornamento: Dicembre 2025 |
+| <img src="https://img.shields.io/badge/AWS-%23FF9900?logo=AmazonAWS&logoColor=white" height=24/> | 📁 [Annotazioni](AWS-Esempio12-Annotazioni/) | Bozza di progetto per integrare terraform nel progetto AlNaoJnnotazioni <br> **Servizi**: *coming soon*<br> ⚠️ *In fase di revisione* |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [Storage](AZURE-Esempio01-Storage/) | Crea un Azure Storage Account con container blob (equivalente ad AWS S3), con configurazioni avanzate per sicurezza, versioning, soft delete, lifecycle management e replica geografica <br> **Servizi**: Storage Account, Blob Container <br> Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [IstanzeVM](AZURE-Esempio02-IstanzeVM/) | Crea una Virtual Machine Linux (Ubuntu 22.04) con Virtual Network, Public IP opzionale, Network Security Group, autenticazione SSH o password, boot diagnostics, managed disk opzionale e cloud-init <br> **Servizi**: Virtual Machine, VNet, NSG, Public IP <br> Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [WebsiteBlob](AZURE-Esempio03-WebsiteBlob/) | Hosting di sito web statico su Blob Storage con HTTPS nativo, CORS configurato, versioning, soft delete, Azure CDN opzionale per performance e supporto domini personalizzati con certificati gestiti <br> **Servizi**: Blob Storage, CDN <br> Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [FrontDoor](AZURE-Esempio04-FrontDoor/) | Distribuzione Azure Front Door (Standard/Premium) con origine Blob Storage, HTTPS automatico, Anycast routing, Rules Engine per caching, WAF integrato opzionale, health probes, DDoS protection e certificati SSL gestiti <br> **Servizi**: Front Door, Blob Storage, WAF <br> Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [Functions](AZURE-Esempio05-Functions/) | Azure Function Python 3.11 che lista blob in Storage Container con parametro path, HTTP Trigger per invocazione REST, Managed Identity per accesso storage, Application Insights per monitoring <br> **Servizi**: Functions, Storage Account, Application Insights <br> Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [EventGrid](AZURE-Esempio06-EventGrid/) | Event Grid System Topic su Storage Account che triggera Function quando blob viene creato, Event Grid Subscription con filtri avanzati, batching configurabile, retry policy e Dead Letter destination opzionale <br> **Servizi**: Event Grid, Functions, Storage Account, Application Insights <br> Ultimo aggiornamento: Marzo 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [LogicApps](AZURE-Esempio07-LogicApps/) | Logic App Workflow che copia blob da storage A a B e invoca Function per logging, trigger automatico quando blob viene aggiunto, API Connection per Blob Storage, Managed Identity per accesso sicuro <br> **Servizi**: Logic Apps, Functions, Blob Storage, Managed Identity <br> Ultimo aggiornamento: Marzo 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [APIManagement](AZURE-Esempio08-APIManagement/) | API Management (Consumption SKU) con due API - GET /api/files (lista blob) e POST /api/calculate (calcola ipotenusa), backend Azure Functions, policies personalizzate, Application Insights logger <br> **Servizi**: API Management, Functions, Application Insights <br> ⚠️ *In fase di revisione* — Ultimo aggiornamento: Febbraio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [CosmosMongo](AZURE-Esempio09-CosmosMongo/) | Database CosmosDB con API MongoDB, consistency levels configurabili, geo-replication multi-region, autoscaling, modalità serverless, backup periodic/continuous, free tier e Analytical Storage per Synapse Link <br> **Servizi**: CosmosDB (MongoDB API) <br> ⚠️ *In fase di revisione* — Ultimo aggiornamento: Gennaio 2026 |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=24/> | 📁 [Annotazioni](AZURE-Esempio12-Annotazioni/) | Bozza di progetto per integrare terraform nel progetto AlNaoJnnotazioni <br> **Servizi**: *coming soon*<br> ⚠️ *In fase di revisione* |
+| <img src="https://img.shields.io/badge/DevOps-0A0A0A?logo=devdotto&logoColor=white" height=24/> | 📁 [Pipeline](DEVOPS-Esempio01-Pipeline/) | Pipeline CI/CD di esempio <br> **Servizi**: Pipeline <br> ⚠️ *In fase di revisione* — Ultimo aggiornamento: Ottobre 2025 |
+| <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" height=24/> | 📁 [Nginx](DOCKER-Esempio01-Nginx/) | Crea un container Docker *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, mappando la porta 8001 e montando una directory locale per i file web <br> **Servizi**: Docker, Nginx <br> Ultimo aggiornamento: Ottobre 2025 |
+| <img src="https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white" height=24/> | 📁 [Nginx](KUBERNETES-Esempio01-Nginx/) | Crea un deployment Kubernetes *locale* con server Nginx che serve una pagina HTML personalizzata con Bootstrap 5, usando ConfigMap per i file web, Service con NodePort e supporto per scaling automatico <br> **Servizi**: Kubernetes, Nginx, ConfigMap, Service <br> Ultimo aggiornamento: Ottobre 2025 |
 
 
 ## Comandi principali

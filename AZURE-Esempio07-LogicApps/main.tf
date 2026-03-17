@@ -2,13 +2,17 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.50.0"
     }
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 resource "azurerm_resource_group" "main" {
@@ -28,8 +32,8 @@ resource "azurerm_storage_account" "source" {
 }
 
 resource "azurerm_storage_container" "source" {
-  name                 = "source"
-  storage_account_name = azurerm_storage_account.source.name
+  name               = "source"
+  storage_account_id = azurerm_storage_account.source.id
 }
 
 resource "azurerm_storage_account" "destination" {
@@ -42,8 +46,8 @@ resource "azurerm_storage_account" "destination" {
 }
 
 resource "azurerm_storage_container" "destination" {
-  name                 = "destination"
-  storage_account_name = azurerm_storage_account.destination.name
+  name               = "destination"
+  storage_account_id = azurerm_storage_account.destination.id
 }
 
 # Storage per Function
@@ -56,29 +60,17 @@ resource "azurerm_storage_account" "function" {
   tags                     = var.tags
 }
 
-# Crea archivio ZIP della funzione
+# Crea archivio ZIP della funzione dalla sottocartella function/
 data "archive_file" "function_code" {
   type        = "zip"
-  source_dir  = path.module
+  source_dir  = "${path.module}/function"
   output_path = "${path.module}/function.zip"
-  excludes = [
-    "function.zip",
-    ".terraform",
-    ".terraform.lock.hcl",
-    "*.tf",
-    "*.tfvars",
-    "*.md",
-    "logic_app_workflow.json",
-    "*.backup",
-    "tfplan"
-  ]
 }
 
 # Storage container per il deploy della funzione
 resource "azurerm_storage_container" "function_deploy" {
-  name                  = "function-releases"
-  storage_account_name  = azurerm_storage_account.function.name
-  container_access_type = "private"
+  name               = "function-releases"
+  storage_account_id = azurerm_storage_account.function.id
 }
 
 # Upload del codice della funzione
@@ -184,20 +176,43 @@ resource "azurerm_logic_app_workflow" "main" {
     type = "SystemAssigned"
   }
 
+  workflow_parameters = {
+    "$connections" = jsonencode({
+      type         = "Object"
+      defaultValue = {}
+    })
+  }
+
+  parameters = {
+    "$connections" = jsonencode({
+      azureblob_source = {
+        connectionId   = azurerm_api_connection.azureblob_source.id
+        connectionName = azurerm_api_connection.azureblob_source.name
+        id             = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Web/locations/${azurerm_resource_group.main.location}/managedApis/azureblob"
+      }
+      azureblob_dest = {
+        connectionId   = azurerm_api_connection.azureblob_dest.id
+        connectionName = azurerm_api_connection.azureblob_dest.name
+        id             = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Web/locations/${azurerm_resource_group.main.location}/managedApis/azureblob"
+      }
+    })
+  }
+
   tags = var.tags
 
   depends_on = [
-    azurerm_api_connection.azureblob,
+    azurerm_api_connection.azureblob_source,
+    azurerm_api_connection.azureblob_dest,
     azurerm_linux_function_app.main
   ]
 }
 
-# API Connections per Logic App
-resource "azurerm_api_connection" "azureblob" {
-  name                = "azureblob-connection"
+# API Connection per Source Storage
+resource "azurerm_api_connection" "azureblob_source" {
+  name                = "azureblob-source-connection"
   resource_group_name = azurerm_resource_group.main.name
   managed_api_id      = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Web/locations/${azurerm_resource_group.main.location}/managedApis/azureblob"
-  display_name        = "Azure Blob Connection"
+  display_name        = "Azure Blob Source Connection"
 
   parameter_values = {
     accountName = azurerm_storage_account.source.name
@@ -205,15 +220,145 @@ resource "azurerm_api_connection" "azureblob" {
   }
 }
 
+# API Connection per Destination Storage
+resource "azurerm_api_connection" "azureblob_dest" {
+  name                = "azureblob-dest-connection"
+  resource_group_name = azurerm_resource_group.main.name
+  managed_api_id      = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Web/locations/${azurerm_resource_group.main.location}/managedApis/azureblob"
+  display_name        = "Azure Blob Destination Connection"
+
+  parameter_values = {
+    accountName = azurerm_storage_account.destination.name
+    accessKey   = azurerm_storage_account.destination.primary_access_key
+  }
+}
+
 data "azurerm_client_config" "current" {}
 
-# Note: Il workflow della Logic App (trigger e actions) deve essere configurato
-# manualmente nel portale Azure dopo il deploy iniziale, poiché Terraform
-# non supporta completamente la configurazione dei parametri $connections
-# necessari per le API connections.
-# 
-# In alternativa, puoi usare Azure CLI per importare il workflow:
-# az logic workflow create --resource-group <rg> --name <name> --definition @logic_app_workflow.json
+# Recupera il default host key della Function App
+data "azurerm_function_app_host_keys" "main" {
+  name                = azurerm_linux_function_app.main.name
+  resource_group_name = azurerm_resource_group.main.name
+
+  depends_on = [azurerm_linux_function_app.main]
+}
+
+# Trigger: monitoraggio container source per nuovi blob
+resource "azurerm_logic_app_trigger_custom" "blob_trigger" {
+  name         = "When_a_blob_is_added_or_modified"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+
+  body = jsonencode({
+    type = "ApiConnection"
+    inputs = {
+      host = {
+        connection = {
+          name = "@parameters('$connections')['azureblob_source']['connectionId']"
+        }
+      }
+      method = "get"
+      path   = "/v2/datasets/@{encodeURIComponent(encodeURIComponent('${azurerm_storage_account.source.name}'))}/triggers/batch/onupdatedfile"
+      queries = {
+        checkBothCreatedAndModifiedDateTime = false
+        folderId                            = "L3NvdXJjZQ=="
+        maxFileCount                        = 10
+      }
+    }
+    recurrence = {
+      frequency = "Minute"
+      interval  = 1
+    }
+    splitOn = "@triggerBody()"
+  })
+}
+
+# Action 1: Leggi contenuto blob da source
+resource "azurerm_logic_app_action_custom" "get_blob_content" {
+  name         = "Get_blob_content"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+
+  body = jsonencode({
+    type = "ApiConnection"
+    inputs = {
+      host = {
+        connection = {
+          name = "@parameters('$connections')['azureblob_source']['connectionId']"
+        }
+      }
+      method = "get"
+      path   = "/v2/datasets/@{encodeURIComponent(encodeURIComponent('${azurerm_storage_account.source.name}'))}/GetFileContentByPath"
+      queries = {
+        path            = "@triggerBody()?['Path']"
+        inferContentType = true
+        queryParametersSingleEncoded = true
+      }
+    }
+    runAfter = {}
+  })
+
+  depends_on = [azurerm_logic_app_trigger_custom.blob_trigger]
+}
+
+# Action 2: Crea blob in destination
+resource "azurerm_logic_app_action_custom" "create_blob_destination" {
+  name         = "Create_blob_in_destination"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+
+  body = jsonencode({
+    type = "ApiConnection"
+    inputs = {
+      body = "@body('Get_blob_content')"
+      headers = {
+        ReadFileMetadataFromServer = true
+      }
+      host = {
+        connection = {
+          name = "@parameters('$connections')['azureblob_dest']['connectionId']"
+        }
+      }
+      method = "post"
+      path   = "/v2/datasets/@{encodeURIComponent(encodeURIComponent('${azurerm_storage_account.destination.name}'))}/files"
+      queries = {
+        folderPath                   = "/destination"
+        name                         = "@triggerBody()?['Name']"
+        queryParametersSingleEncoded = true
+      }
+    }
+    runAfter = {
+      Get_blob_content = ["Succeeded"]
+    }
+  })
+
+  depends_on = [azurerm_logic_app_action_custom.get_blob_content]
+}
+
+# Action 3: Chiamata HTTP alla Function per logging
+resource "azurerm_logic_app_action_custom" "call_logger" {
+  name         = "Call_Logger_Function"
+  logic_app_id = azurerm_logic_app_workflow.main.id
+
+  body = jsonencode({
+    type = "Http"
+    inputs = {
+      method = "POST"
+      uri    = "https://${azurerm_linux_function_app.main.default_hostname}/api/logger?code=${data.azurerm_function_app_host_keys.main.default_function_key}"
+      headers = {
+        "Content-Type" = "application/json"
+      }
+      body = {
+        blobName             = "@triggerBody()?['Name']"
+        sourceContainer      = "source"
+        destinationContainer = "destination"
+        operationTime        = "@{utcNow()}"
+      }
+    }
+    runAfter = {
+      Create_blob_in_destination = ["Succeeded"]
+    }
+  })
+
+  depends_on = [azurerm_logic_app_action_custom.create_blob_destination]
+}
 
 # Role Assignments
 resource "azurerm_role_assignment" "logicapp_source_reader" {

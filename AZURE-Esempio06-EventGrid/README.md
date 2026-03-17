@@ -20,13 +20,18 @@ Esempio Azure Function triggerata da Event Grid quando viene caricato un blob in
 - Azure CLI installato e autenticato
 - Terraform installato (versione >= 1.0)
 - Subscription Azure attiva
+- Subscription Azure attiva
 
 
 
 ## Comandi
+- Prima di proseguire ricorsarsi di configurare la variabile d'ambiente che definisce la subscription (azurerm v4 richiede la subscription configurata esplicitamente), questo comando valorizza la variabile con l'ID della subscription attiva corrente:
+    ```bash
+    export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    ```
 - Oppure inizializzazione del terraform
     ```bash
-    terraform init
+    terraform init -upgrade
     terraform plan
     terraform apply
     ```
@@ -40,11 +45,27 @@ Esempio Azure Function triggerata da Event Grid quando viene caricato un blob in
     ```
 - Test
     ```bash
-    echo "Test Event Grid Trigger $(date)" > /tmp/test-eventgrid.txt && az storage blob upload -f /tmp/test-eventgrid.txt -c sourcedata -n test-eventgrid.txt --account-name stsource06 --overwrite
+    echo "Test Event Grid Trigger $(date)" > /tmp/test-eventgrid.txt 
+    az storage blob upload -f /tmp/test-eventgrid.txt -c sourcedata -n test-eventgrid.txt --account-name stsource06 --overwrite
+
+    # Poi controlla subito i log
+    az monitor app-insights query \
+    --app func-eventgrid-06-insights \
+    --resource-group alnao-terraform-esempio06-eventgrid \
+    --analytics-query "requests | where timestamp > ago(10m) | order by timestamp desc | project timestamp, name, resultCode, duration, success" \
+    --output table
+
+    # Dopo il re-deploy, ricarica il file e controlla i log tra 30-60 secondi:
+    az monitor app-insights query \
+    --app func-eventgrid-06-insights \
+    --resource-group alnao-terraform-esempio06-eventgrid \
+    --analytics-query "traces | order by timestamp desc | take 20" \
+    --output table
+    
     ```
 - Rimozione di tutte le risorse terraform
   ```bash
-  terraform destroy
+  terraform destroy -auto-approve
   ```
 
 
@@ -54,6 +75,8 @@ Esempio Azure Function triggerata da Event Grid quando viene caricato un blob in
 - [Python Developer Guide](https://docs.microsoft.com/azure/azure-functions/functions-reference-python)
 - [Functions Pricing](https://azure.microsoft.com/pricing/details/functions/)
 - [Best Practices](https://docs.microsoft.com/azure/azure-functions/functions-best-practices)
+
+
 
 # &lt; AlNao /&gt;
 Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 

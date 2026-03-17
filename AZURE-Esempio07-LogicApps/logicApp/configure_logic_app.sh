@@ -65,8 +65,8 @@ echo ""
 read -p "Vuoi configurare automaticamente il workflow da logic_app_workflow.json? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if [ ! -f "logic_app_workflow.json" ]; then
-        echo "Errore: File logic_app_workflow.json non trovato"
+    if [ ! -f "logicApp/logic_app_workflow.json" ]; then
+        echo "Errore: File logicApp/logic_app_workflow.json non trovato"
         exit 1
     fi
     
@@ -77,7 +77,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "gli ID corretti delle API connections e parametrizzazione."
     echo ""
     echo "Comando di riferimento:"
-    echo "az resource update --resource-group $RG_NAME --name $LOGIC_APP_NAME --resource-type Microsoft.Logic/workflows --set properties=@logic_app_workflow.json"
+    echo "az resource update --resource-group $RG_NAME --name $LOGIC_APP_NAME --resource-type Microsoft.Logic/workflows --set properties=@logicApp/logic_app_workflow.json"
 else
     echo "Configurazione manuale richiesta tramite portale Azure."
 fi
