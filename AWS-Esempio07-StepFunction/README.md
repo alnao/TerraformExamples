@@ -1,7 +1,7 @@
 # AWS Esempio 07 - Step Functions con S3 Copy
 
 Questo esempio mostra come usare AWS Step Functions per orchestrare un workflow automatico che copia file tra bucket S3 e registra le operazioni tramite Lambda.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Workflow**
 1. File caricato nel bucket source
@@ -28,7 +28,7 @@ Questo esempio mostra come usare AWS Step Functions per orchestrare un workflow 
 - EventBridge Rule: Rule per catturare eventi S3 Object Created
 - EventBridge Target: Target Step Function per la rule
 - CloudWatch Log Groups: Log per Step Functions e Lambda
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio07StepFunction/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio07StepFunction/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate
@@ -47,8 +47,8 @@ Questo esempio mostra come usare AWS Step Functions per orchestrare un workflow 
 ## Comandi
 - Creazione
   ```bash
-  NOME_BUCKET_SOURCE="alnao-terraform-aws-esempio07-step-source"
-  NOME_BUCKET_DEST="alnao-terraform-aws-esempio07-step-dest"
+  NOME_BUCKET_SOURCE="alnao-dev-terraform-esempio07-step-source"
+  NOME_BUCKET_DEST="alnao-dev-terraform-esempio07-step-dest"
   terraform init
   terraform plan
   terraform apply \
@@ -66,33 +66,36 @@ Questo esempio mostra come usare AWS Step Functions per orchestrare un workflow 
   aws s3 ls s3://$NOME_BUCKET_DEST/
 
   # Visualizza logs Lambda
-  aws logs tail /aws/lambda/alnao-terraform-aws-esempio07-step-function-logger --follow
+  LAMBDA_NAME=$(terraform output -raw logger_function_name)
+  aws logs tail /aws/lambda/$LAMBDA_NAME --follow
 
   # Visualizza logs Step Function
-  aws logs tail /aws/vendedlogs/states/alnao-terraform-aws-esempio07-step-function --follow
+  STEP_FUNCTION_NAME=$(terraform output -raw step_function_name)
+  aws logs tail /aws/vendedlogs/states/$STEP_FUNCTION_NAME --follow
 
   # Lista esecuzioni Step Function
+  STEP_FUNCTION_ARN=$(terraform output -raw step_function_arn)
   aws stepfunctions list-executions \
-    --state-machine-arn $(terraform output -raw step_function_arn) \
-    --max-results 10
+    --state-machine-arn $STEP_FUNCTION_ARN \
+    --max-results 10 | jq .executions
 
   # Dettagli esecuzione specifica
   EXECUTION_ARN=$(aws stepfunctions list-executions \
-    --state-machine-arn $(terraform output -raw step_function_arn) \
+    --state-machine-arn $STEP_FUNCTION_ARN \
     --max-results 1 \
     --query 'executions[0].executionArn' \
     --output text)
-  aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN
+  aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN | jq .
 
   # Visualizza metriche Step Functions
   aws cloudwatch get-metric-statistics \
     --namespace AWS/States \
     --metric-name ExecutionsFailed \
-    --dimensions Name=StateMachineArn,Value=$(terraform output -raw step_function_arn) \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=StateMachineArn,Value=$STEP_FUNCTION_ARN \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
-    --statistics Sum
+    --statistics Sum | jq .
   ```
 - Distruzione
   ```bash

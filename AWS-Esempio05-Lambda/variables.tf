@@ -7,7 +7,7 @@ variable "region" {
 variable "bucket_name" {
   description = "Nome del bucket S3 per testing"
   type        = string
-  default     = "alnao-terraform-aws-esempio05-lambda-bucket"
+  default     = "alnao-dev-terraform-esempio05-lambda-bucket"
 }
 
 variable "force_destroy" {
@@ -20,7 +20,7 @@ variable "force_destroy" {
 variable "lambda_function_name" {
   description = "Nome della Lambda function"
   type        = string
-  default     = "alnao-terraform-aws-esempio05-lambda"
+  default     = "alnao-dev-terraform-esempio05-lambda"
 }
 
 variable "lambda_runtime" {

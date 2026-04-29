@@ -1,7 +1,7 @@
 # AWS Esempio 08 - API Gateway REST API
 
 Questo esempio mostra come creare un'API Gateway REST con due endpoint che integrano Lambda Functions per diverse operazioni: listing di file S3 e calcolo matematico.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Architettura API**
 1. Client HTTP invia richiesta GET /files
@@ -39,7 +39,7 @@ Oppure:
 - Usage Plan (opzionale): Rate limiting e quota per protezione API
 - API Key (opzionale): Chiave per autenticazione richieste
 - CORS Configuration (opzionale): OPTIONS method per Cross-Origin requests
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio08ApiGateway/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio08ApiGateway/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate
@@ -125,17 +125,20 @@ Oppure:
 
   ```bash
   # Visualizza logs Lambda list-files
-  aws logs tail /aws/lambda/alnao-terraform-aws-esempio08-api-list-files --follow
+  LAMBDA_NAME_GET=$(terraform output -raw lambda_name_get)
+  aws logs tail /aws/lambda/$LAMBDA_NAME_GET --follow
 
   # Visualizza logs Lambda calculate
-  aws logs tail /aws/lambda/alnao-terraform-aws-esempio08-api-calculate-hypotenuse --follow
+  LAMBDA_NAME_POST=$(terraform output -raw lambda_name_post)
+  aws logs tail /aws/lambda/$LAMBDA_NAME_POST --follow
 
   # Visualizza logs API Gateway
-  aws logs tail /aws/apigateway/alnao-terraform-aws-esempio08-api --follow
+  API_GATEWAY_NAME=$(terraform output -raw api_id)
+  aws logs tail /aws/apigateway/$API_GATEWAY_NAME --follow
 
   # Query logs recenti
   aws logs filter-log-events \
-    --log-group-name /aws/apigateway/alnao-terraform-aws-esempio08-api \
+    --log-group-name /aws/apigateway/$API_GATEWAY_NAME \
     --start-time $(date -d '10 minutes ago' +%s)000 \
     --filter-pattern "{ $.status = 500 }"
 
@@ -143,9 +146,9 @@ Oppure:
   aws cloudwatch get-metric-statistics \
     --namespace AWS/ApiGateway \
     --metric-name Count \
-    --dimensions Name=ApiName,Value=alnao-terraform-aws-esempio08-api \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=ApiName,Value=$API_GATEWAY_NAME \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
     --statistics Sum
 
@@ -153,9 +156,9 @@ Oppure:
   aws cloudwatch get-metric-statistics \
     --namespace AWS/ApiGateway \
     --metric-name 4XXError \
-    --dimensions Name=ApiName,Value=alnao-terraform-aws-esempio08-api \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=ApiName,Value=$API_GATEWAY_NAME \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
     --statistics Sum
 
@@ -163,9 +166,9 @@ Oppure:
   aws cloudwatch get-metric-statistics \
     --namespace AWS/ApiGateway \
     --metric-name Latency \
-    --dimensions Name=ApiName,Value=alnao-terraform-aws-esempio08-api \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=ApiName,Value=$API_GATEWAY_NAME \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
     --statistics Average,Maximum
 
@@ -173,9 +176,9 @@ Oppure:
   aws cloudwatch get-metric-statistics \
     --namespace AWS/Lambda \
     --metric-name Invocations \
-    --dimensions Name=FunctionName,Value=alnao-terraform-aws-esempio08-api-list-files \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=FunctionName,Value=$LAMBDA_NAME_GET \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
     --statistics Sum
   ```
@@ -248,3 +251,27 @@ Oppure:
 - [API Gateway Best Practices](https://docs.aws.amazon.com/apigateway/latest/developerguide/best-practices.html)
 - [Throttling API Requests](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-request-throttling.html)
 
+
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
+
+## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
+Public projects 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
+*Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.

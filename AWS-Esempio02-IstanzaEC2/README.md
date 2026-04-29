@@ -1,13 +1,13 @@
 # AWS Esempio 02 - Istanza EC2
 Questo esempio mostra come creare un'istanza EC2 su AWS usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Risorse create**:
 - EC2 Instance: Istanza EC2 con Amazon Linux 2023
 - Security Group: Gruppo di sicurezza con regole per SSH, HTTP e HTTPS
 - Key Pair: (Opzionale) Coppia di chiavi per accesso SSH
 - Elastic IP: (Opzionale) IP pubblico statico
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio02IstanzaEC2/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio02IstanzaEC2/terraform.tfstate`.
 
 **Prerequisiti**:
 - Account AWS con credenziali configurate
@@ -45,11 +45,12 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/aws-ec2-key -N ""
     ```
 - Plan del template
     ```bash
-    # Elenco chiavi esistenti
-    aws ec2 describe-key-pairs --region eu-central-1 --query 'KeyPairs[*].{Name:KeyName,Id:KeyPairId,Fingerprint:KeyFingerprint}' --output table
+    # Elenco chiavi esistenti usando una esistente
+    KEY=$(aws ec2 describe-key-pairs --region eu-central-1 --query 'KeyPairs[*].{Name:KeyName,Id:KeyPairId,Fingerprint:KeyFingerprint}' --output json | jq -r ".[0] | .Name")
+    echo $KEY
 
     # Con chiave esistente
-    terraform plan -var="existing_key_name=alberto-nao-francoforte"
+    terraform plan -var="existing_key_name=$KEY"
 
     # Oppure creando una nuova chiave
     terraform plan -var="create_key_pair=true" -var="public_key=$(cat ~/.ssh/aws-ec2-key.pub)"
@@ -57,14 +58,14 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/aws-ec2-key -N ""
 - Applicazione
     ```bash
     # Con chiave esistente
-    terraform apply -var="existing_key_name=alberto-nao-francoforte"
+    terraform apply -var="existing_key_name=$KEY"
 
     # Oppure creando una nuova chiave
     terraform apply -var="create_key_pair=true" -var="public_key=$(cat ~/.ssh/aws-ec2-key.pub)"
     ```
 - Esempio con user data (installazione web server)
     ```bash
-    terraform apply  -var="existing_key_name=alberto-nao-francoforte" -var="user_data=$(cat <<'EOF'
+    terraform apply  -var="existing_key_name=$KEY" -var="user_data=$(cat <<'EOF'
     #!/bin/bash
     yum update -y
     yum install -y httpd
@@ -76,11 +77,18 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/aws-ec2-key -N ""
     ```
 - Connessione all'istanza
     ```bash
-    # Dopo il deployment, connettiti via SSH
-    ssh -i ~/.ssh/aws-ec2-key ec2-user@<PUBLIC_IP>
+    INSTANCE_ID=$(terraform output instance_id)
+    PUBLIC_IP=$(terraform output instance_public_ip)
+    SSH_CONNECTION_STRING=$(terraform output ssh_connection_string)
 
-    # Il PUBLIC_IP è disponibile nell'output
-    terraform output instance_public_ip
+    # NOTA: potrebbe essere necessario sostituire <path-to-key> con il path corretto della chiave SSH
+    KEY_PATH="~/.ssh/key.pem"
+    
+    SSH_CONNECTION_STRING=$(echo $SSH_CONNECTION_STRING | sed "s|<path-to-key>|$KEY_PATH|")
+
+    echo "Esecuzione comando da console:"
+    echo $SSH_CONNECTION_STRING
+    
     ```
 - Distruzione
 

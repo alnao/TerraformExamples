@@ -1,7 +1,7 @@
 # AWS Esempio 06 - EventBridge con Lambda
 
 Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamente una Lambda function quando un file viene caricato in un bucket S3.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Risorse create**
 - S3 Bucket: Bucket sorgente che genera eventi
@@ -14,7 +14,7 @@ Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamen
 - CloudWatch Log Group: Log della Lambda
 - CloudWatch Alarms: (Opzionale) Alert per errori
 - SQS Dead Letter Queue: (Opzionale) Per eventi falliti
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio06EventBridge/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio06EventBridge/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate
@@ -30,7 +30,7 @@ Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamen
 ## Comandi
 - Creazione
   ```bash
-  NOME_BUCKET="alnao-terraform-aws-esempio06-eventbridge-bucket"
+  NOME_BUCKET="alnao-dev-terraform-esempio06-eventbridge-bucket"
   terraform init
   terraform plan
   terraform apply -var="source_bucket_name=$NOME_BUCKET"
@@ -43,15 +43,17 @@ Questo esempio mostra come usare Amazon EventBridge per triggerare automaticamen
   aws s3 cp /tmp/test.txt s3://$NOME_BUCKET/test.txt
 
   # Visualizza logs Lambda
-  aws logs tail /aws/lambda/alnao-terraform-aws-esempio06-eventbridge-lambda --follow
+  LAMBDA_NAME=$(terraform output -raw lambda_function_name)
+  aws logs tail /aws/lambda/$LAMBDA_NAME --follow
 
   # Visualizza metriche EventBridge
+  EVENTBRIDGE_RULE_NAME=$(terraform output -raw eventbridge_rule_name)
   aws cloudwatch get-metric-statistics \
     --namespace AWS/Events \
     --metric-name Invocations \
-    --dimensions Name=RuleName,Value=s3-object-created-rule \
-    --start-time $(date -u -d '1 hour ago' --iso-8601) \
-    --end-time $(date -u --iso-8601) \
+    --dimensions Name=RuleName,Value=$EVENTBRIDGE_RULE_NAME \
+    --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+    --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
     --period 300 \
     --statistics Sum
   ```

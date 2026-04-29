@@ -1,7 +1,7 @@
 # AWS Esempio 05 - Lambda Function
 
 Questo esempio mostra come creare una AWS Lambda function con Terraform che lista gli oggetti in un bucket S3 in base al path fornito come parametro.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Risorse create**
 - S3 Bucket: Bucket per testing della Lambda
@@ -12,7 +12,7 @@ Questo esempio mostra come creare una AWS Lambda function con Terraform che list
 - Lambda Function URL: (Opzionale) URL pubblico per invocare la Lambda
 - Lambda Alias: (Opzionale) Alias per versioning
 - CloudWatch Alarms: (Opzionale) Allarmi per errori e throttling
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio05Lambda/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio05Lambda/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate
@@ -47,24 +47,6 @@ Questo esempio mostra come creare una AWS Lambda function con Terraform che list
     }
     ```
 
-**Lambda Configuration**
-- Runtime supportati
-  - Python: 3.11, 3.10, 3.9
-  - Node.js: 20.x, 18.x
-  - Java: 21, 17, 11, 8
-  - .NET: 8, 6
-  - Go: 1.x
-  - Ruby: 3.2
-- Memory: 128 MB - 10.240 MB
-- CPU: Proporzionale alla memory
-  - 128 MB = ~0.08 vCPU
-  - 1.024 MB = ~0.6 vCPU
-  - 1.769 MB = 1 vCPU
-  - 10.240 MB = 6 vCPU
-- Timeout
-  - Default: 3 secondi
-  - Massimo: 15 minuti (900 secondi)
-
 **Costi**
 - Lambda Pricing (eu-central-1)
   - **Richieste**: $0.20 per milione
@@ -98,35 +80,26 @@ Questo esempio mostra come creare una AWS Lambda function con Terraform che list
   terraform init
   terraform plan
 
-  NOME_BUCKET="alnao-aws-terraform-esempio05-lambda"
+  NOME_BUCKET="alnao-dev-terraform-esempio05-lambda"
   ```
 - Deploy
   ```bash
   terraform apply -var="bucket_name=$NOME_BUCKET"
+
+  LAMBDA_NAME=$(terraform output -raw lambda_function_name)
+  echo $LAMBDA_NAME
   ```
-- Test della Lambda
-  - Via Function URL (se abilitato)
-    ```bash
-    # Ottieni Function URL
-    FUNCTION_URL=$(terraform output -raw lambda_function_url)
+- Test della Lambda via AWS CLI
+  ```bash
+  # Invoca Lambda direttamente
+  aws lambda invoke \
+    --function-name $LAMBDA_NAME \
+    --payload '{"path": "test/"}' \
+    --cli-binary-format raw-in-base64-out \
+    response.json
 
-    # Test senza path (root bucket)
-    curl "$FUNCTION_URL"
-
-    # Test con path specifico
-    curl "$FUNCTION_URL?path=test/"
-    ```
-  - Via AWS CLI
-    ```bash
-    # Invoca Lambda direttamente
-    aws lambda invoke \
-      --function-name s3-list-objects-function \
-      --payload '{"path": "test/"}' \
-      --cli-binary-format raw-in-base64-out \
-      response.json
-
-    cat response.json
-    ```
+  cat response.json
+  ```
   - Upload file di test nel bucket
     ```bash
     # Crea file di test
@@ -138,63 +111,19 @@ Questo esempio mostra come creare una AWS Lambda function con Terraform che list
     aws s3 cp /tmp/test2.txt s3://$NOME_BUCKET/test/subfolder/
 
     # Testa la Lambda
-    curl "$FUNCTION_URL?path=test/"
-    ```
-- Modifiche evolute dell'esempio (facoltativo):
-  - Con Lambda personalizzata: Per usare codice Lambda personalizzato, crea un file `lambda_function.py`:
-    ```python
-    import json
-    import boto3
+    aws lambda invoke \
+      --function-name $LAMBDA_NAME \
+      --payload '{"path": "test/"}' \
+      --cli-binary-format raw-in-base64-out \
+      response.json
+    jq -r '.body' response.json | jq .
 
-    def lambda_handler(event, context):
-        # Il tuo codice qui
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Hello from Lambda!')
-        }
-    ```
-    - modificare il terraform:
-      ```hcl
-      # In terraform.tfvars
-      lambda_code = file("lambda_function.py")
-      ```
-  - Con VPC
-    ```bash
-    terraform apply \
-      -var="bucket_name=my-bucket-123" \
-      -var='vpc_subnet_ids=["subnet-xxx","subnet-yyy"]' \
-      -var='vpc_security_group_ids=["sg-xxx"]'
-    ```
-  - Con Dead Letter Queue: Prima crea una SQS queue:
-    ```bash
-    aws sqs create-queue --queue-name lambda-dlq
-    ```
-    Poi:
-    ```bash
-    terraform apply \
-      -var="bucket_name=my-bucket-123" \
-      -var="dead_letter_queue_arn=arn:aws:sqs:eu-central-1:123456789012:lambda-dlq"
-    ```
-  - Con CloudWatch Alarms
-    ```bash
-    # Prima crea SNS topic
-    aws sns create-topic --name lambda-alerts
-
-    terraform apply \
-      -var="bucket_name=my-bucket-123" \
-      -var="enable_error_alarm=true" \
-      -var="enable_throttle_alarm=true" \
-      -var='alarm_actions=["arn:aws:sns:eu-central-1:123456789012:lambda-alerts"]'
     ```
 - Monitoring: con CloudWatch Logs
   ```bash
   # Visualizza log in tempo reale
-  aws logs tail /aws/lambda/s3-list-objects-function --follow
+  aws logs tail /aws/lambda/$LAMBDA_NAME --follow
 
-  # Query log
-  aws logs filter-log-events \
-    --log-group-name /aws/lambda/s3-list-objects-function \
-    --start-time $(date -u -d '1 hour ago' +%s)000
   ```
   - Metriche CloudWatch
     ```bash
@@ -202,19 +131,19 @@ Questo esempio mostra come creare una AWS Lambda function con Terraform che list
     aws cloudwatch get-metric-statistics \
       --namespace AWS/Lambda \
       --metric-name Invocations \
-      --dimensions Name=FunctionName,Value=s3-list-objects-function \
-      --start-time $(date -u -d '1 hour ago' --iso-8601) \
-      --end-time $(date -u --iso-8601) \
-      --period 300 \
+      --dimensions Name=FunctionName,Value=$LAMBDA_NAME \
+      --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+      --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
+      --period 60 \
       --statistics Sum
 
     # Errori
     aws cloudwatch get-metric-statistics \
       --namespace AWS/Lambda \
       --metric-name Errors \
-      --dimensions Name=FunctionName,Value=s3-list-objects-function \
-      --start-time $(date -u -d '1 hour ago' --iso-8601) \
-      --end-time $(date -u --iso-8601) \
+      --dimensions Name=FunctionName,Value=$LAMBDA_NAME \
+      --start-time $(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+      --end-time $(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ) \
       --period 300 \
       --statistics Sum
     ```

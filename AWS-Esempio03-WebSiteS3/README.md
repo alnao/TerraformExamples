@@ -1,7 +1,7 @@
 # AWS Esempio 03 - Sito Web Statico su S3
 
 Questo esempio mostra come creare e hostare un sito web statico su Amazon S3 usando Terraform.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 - ⚠️ NOTA: S3 website endpoint supporta solo HTTP. Per HTTPS è necessario CloudFront (vedi AWS-Esempio04-CloudFront). ⚠️
 
 
@@ -14,7 +14,7 @@ Questo esempio mostra come creare e hostare un sito web statico su Amazon S3 usa
 - Versioning: (Opzionale) Abilitazione versioning
 - Logging: (Opzionale) Bucket separato per i log di accesso
 - S3 Objects: Upload automatico di index.html e error.html
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio03WebSiteS3/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio03WebSiteS3/terraform.tfstate`.
 
 **Limitazioni**
 - Solo contenuto statico (HTML, CSS, JS, immagini)
@@ -62,7 +62,7 @@ Esempio: Sito da 100MB con 10.000 visite/mese:
 - Deploy con configurazione di default
   ```bash
   # Il bucket name deve essere univoco globalmente
-  terraform apply -var="bucket_name=alnao-aws-terraform-esempio03sito-web"
+  terraform apply -var="bucket_name=alnao-dev-terraform-esempio03sito-web"
   ```
 - Visualizzare il sito
   ```bash

@@ -1,7 +1,7 @@
 # AWS Esempio 04 - CloudFront CDN
 
 Questo esempio mostra come creare una distribuzione Amazon CloudFront per servire contenuti statici da S3 con HTTPS, caching e performance ottimizzate.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Risorse create**
 - S3 Bucket**: Bucket privato per il contenuto origin
@@ -12,7 +12,7 @@ Questo esempio mostra come creare una distribuzione Amazon CloudFront per servir
 - CloudFront Function: (Opzionale) Per URL rewrite e redirect
 - Logging Bucket: (Opzionale) Per access logs
 - SSL/TLS: Certificato CloudFront o custom ACM
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio04CloudFront/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio04CloudFront/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate
@@ -71,7 +71,7 @@ Esempio: Sito con 100.000 visite/mese (100MB ciascuna):
 - Deploy base
   - Attenzione: la distribuzione può richiedere 15-30 minuti per essere creata
   ```bash
-  terraform apply -var="bucket_name=alnao-aws-terraform-esempio04-cloudfront"
+  terraform apply -var="bucket_name=alnao-dev-terraform-esempio04-cloudfront"
   ```
 - Visualizzare il sito
   ```bash

@@ -8,7 +8,7 @@ variable "region" {
 variable "bucket_name" {
 	description = "Name of the S3 bucket"
 	type        = string
-	default     = "aws-esempio01-buckets3"
+	default     = "alnao-dev-terraform-esempio01-buckets3"
 }
 
 variable "tags" {

@@ -7,13 +7,13 @@ variable "region" {
 variable "source_bucket_name" {
   description = "Nome bucket sorgente"
   type        = string
-  default     = "alnao-terraform-aws-esempio07-step-source"
+  default     = "alnao-dev-terraform-esempio07-step-source"
 }
 
 variable "destination_bucket_name" {
   description = "Nome bucket destinazione"
   type        = string
-  default     = "alnao-terraform-aws-esempio07-step-dest"
+  default     = "alnao-dev-terraform-esempio07-step-dest"
 }
 
 variable "force_destroy" {
@@ -25,13 +25,13 @@ variable "force_destroy" {
 variable "step_function_name" {
   description = "Nome Step Function"
   type        = string
-  default     = "alnao-terraform-aws-esempio07-step-function"
+  default     = "alnao-dev-terraform-esempio07-step-function"
 }
 
 variable "logger_function_name" {
   description = "Nome Lambda logger"
   type        = string
-  default     = "alnao-terraform-aws-esempio07-step-function-logger"
+  default     = "alnao-dev-terraform-esempio07-step-function-logger"
 }
 
 variable "step_function_log_level" {

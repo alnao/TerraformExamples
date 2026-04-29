@@ -73,7 +73,7 @@ variable "existing_key_name" {
 variable "root_volume_size" {
   description = "Size of the root volume in GB"
   type        = number
-  default     = 20
+  default     = 30
 }
 
 variable "root_volume_type" {

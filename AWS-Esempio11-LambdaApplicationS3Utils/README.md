@@ -445,12 +445,12 @@ Chiave privata salvata in **SSM Parameter Store**:
 - API Gateway: ~$3.50 (1M richieste)
 - DynamoDB: ~$2.50 (PAY_PER_REQUEST)
 - S3: ~$5 (100GB storage, 1M richieste)
-- RDS Aurora t3.small: ~$35
+- RDS Aurora t3.medium: ~$85
 - Secrets Manager: ~$0.40
 - SSM Parameter Store: Free
 - CloudWatch Logs: ~$1 (5GB)
 
-**Totale stimato**: ~$52/mese
+**Totale stimato**: ~$85-100/mese
 
 **Risparmi**:
 - Disabilita RDS se non serve (-$35)

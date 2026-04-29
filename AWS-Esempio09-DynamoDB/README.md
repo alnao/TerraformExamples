@@ -1,7 +1,7 @@
 # AWS Esempio 09 - Amazon DynamoDB
 
 Questo esempio mostra come creare e gestire una tabella Amazon DynamoDB con Terraform, includendo configurazioni avanzate come indexes, streams, autoscaling, backup e global tables per replica multi-region.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 **Architettura DynamoDB**
 1. Applicazione invia richiesta di lettura/scrittura a DynamoDB
@@ -41,7 +41,7 @@ Questo esempio mostra come creare e gestire una tabella Amazon DynamoDB con Terr
   - EventBridge Target: Target Lambda per eventi S3
   - IAM Roles & Policies: Permessi Lambda per DynamoDB, S3 e CloudWatch
   - CloudWatch Log Groups: Logs per Lambda function
-- Lo stato remoto viene salvato nel bucket `terraform-aws-alnao` con chiave `Esempio09DynamoDB/terraform.tfstate`.
+- Lo stato remoto viene salvato nel bucket `alnao-dev-terraform` con chiave `Esempio09DynamoDB/terraform.tfstate`.
 
 **Prerequisiti**
 - Account AWS con credenziali configurate

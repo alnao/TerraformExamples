@@ -1,11 +1,13 @@
 # AWS Esempio 10 - RDS Aurora MySQL
 
 Questo esempio mostra come creare un cluster **Amazon Aurora MySQL** con Terraform, configurato per essere accessibile dal proprio PC.
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
+
 
 ## Caratteristiche
 
 - **Aurora MySQL 8.0** - Ultima versione compatibile con MySQL
-- **Istanza piccola** - `db.t3.small` per minimizzare i costi
+- **Istanza piccola** - `db.t3.medium` per minimizzare i costi
 - **Accesso pubblico** - Configurato per consentire connessioni dal tuo PC
 - **Security Group personalizzato** - Aperto a tutti gli IP per semplicità (modificabile)
 - **Backup automatici** - Retention di 7 giorni
@@ -46,7 +48,7 @@ AWS-Esempio10-RDS/
 
 2. **Aurora Cluster**
    - Cluster Aurora MySQL 8.0
-   - 1 istanza `db.t3.small` (configurabile)
+   - 1 istanza `db.t3.medium` (configurabile)
    - Storage encrypted
    - Backup retention 7 giorni
 
@@ -67,14 +69,14 @@ AWS-Esempio10-RDS/
 
 ```hcl
 # Identificatore del cluster
-cluster_identifier = "alnao-terraform-aws-esempio10-aurora"
+cluster_identifier = "alnao-dev-terraform-esempio10-aurora"
 
 # Credenziali (CAMBIALE IN PRODUZIONE!)
-master_username = "admin"
-master_password = "ChangeMe123!"
+master_username = "alnao"
+master_password = "Bellissimo123!"
 
 # Classe istanza (più piccola disponibile)
-instance_class = "db.t3.small"
+instance_class = "db.t3.medium"
 
 # Accesso pubblico
 publicly_accessible = true
@@ -82,92 +84,55 @@ allowed_cidr_blocks = ["0.0.0.0/0"]  # Modifica per limitare l'accesso
 ```
 
 ### Personalizzazione Accesso
+- Inizializzazione e pianificazione
+   ```bash
+   cd AWS-Esempio10-RDS
+   terraform init
+   terraform plan
+   ```
+- Applicazione
+   ```bash
+   # Con password di default (NON per produzione)
+   terraform apply
 
-Per limitare l'accesso solo al tuo IP, modifica in `variables.tf` o passa via CLI:
+   # Con password personalizzata
+   terraform apply -var="master_password=TuaPasswordSicura123!"
+   ```
+- Connessione al Database
+   ```bash
+   terraform output cluster_endpoint
+   terraform output connection_string
+   RDS_ENDPOINT=$(terraform output -raw cluster_endpoint)
+   mysql -h $RDS_ENDPOINT -P 3306 --skip-ssl -u alnao -p
 
-```bash
-# Ottieni il tuo IP pubblico
-MY_IP=$(curl -s https://api.ipify.org)
+   # Oppure usa il connection string fornito in output:
+   terraform output -raw connection_string
+   ```
 
-# Applica con IP specifico
-terraform apply -var="allowed_cidr_blocks=[\"${MY_IP}/32\"]"
-```
+   ```sql
+   -- Mostra database
+   SHOW DATABASES;
+   -- Usa il database
+   USE esempio10db;
 
-## Utilizzo
+   -- Crea una tabella di test
+   CREATE TABLE test (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
 
-### 1. Inizializzazione
+   -- Inserisci dati
+   INSERT INTO test (name) VALUES ('Test 1'), ('Test 2');
 
-```bash
-cd AWS-Esempio10-RDS
-terraform init
-```
+   -- Query di test
+   SELECT * FROM test;
+   ```
 
-### 2. Pianificazione
-
-```bash
-terraform plan
-```
-
-### 3. Applicazione
-
-```bash
-# Con password di default (NON per produzione)
-terraform apply
-
-# Con password personalizzata
-terraform apply -var="master_password=TuaPasswordSicura123!"
-```
-
-### 4. Connessione al Database
-
-Dopo il deploy, ottieni l'endpoint:
-
-```bash
-terraform output cluster_endpoint
-terraform output connection_string
-```
-
-Connessione con MySQL client:
-
-```bash
-mysql -h <cluster_endpoint> -P 3306 -u admin -p esempio10db
-```
-
-Oppure usa il connection string fornito in output:
-
-```bash
-# Copia il comando dall'output e eseguilo
-terraform output -raw connection_string
-```
-
-### 5. Test della Connessione
-
-```sql
--- Mostra database
-SHOW DATABASES;
-
--- Usa il database
-USE esempio10db;
-
--- Crea una tabella di test
-CREATE TABLE test (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Inserisci dati
-INSERT INTO test (name) VALUES ('Test 1'), ('Test 2');
-
--- Query di test
-SELECT * FROM test;
-```
-
-### 6. Pulizia
-
-```bash
-terraform destroy
-```
+- Pulizia
+   ```bash
+   terraform destroy
+   ```
 
 ## Variabili Configurabili
 
@@ -176,13 +141,13 @@ Vedi `variables.tf` per tutte le opzioni. Principali:
 | Variabile | Default | Descrizione |
 |-----------|---------|-------------|
 | `region` | `eu-central-1` | Regione AWS |
-| `cluster_identifier` | `alnao-terraform-aws-esempio10-aurora` | Nome cluster |
+| `cluster_identifier` | `alnao-dev-terraform-esempio10-aurora` | Nome cluster |
 | `engine` | `aurora-mysql` | Engine database |
 | `engine_version` | `8.0.mysql_aurora.3.04.0` | Versione engine |
 | `database_name` | `esempio10db` | Nome database |
 | `master_username` | `admin` | Username master |
 | `master_password` | `ChangeMe123!` | Password master |
-| `instance_class` | `db.t3.small` | Classe istanza |
+| `instance_class` | `db.t3.medium` | Classe istanza |
 | `instance_count` | `1` | Numero istanze |
 | `publicly_accessible` | `true` | Accesso pubblico |
 | `allowed_cidr_blocks` | `["0.0.0.0/0"]` | CIDR autorizzati |
@@ -243,13 +208,13 @@ terraform output connection_details
 
 ## Costi Stimati
 
-Per `db.t3.small` in `eu-central-1`:
-- **Istanza**: ~$0.041/ora (~$30/mese per 1 istanza)
+Per `db.t3.medium` in `eu-central-1`:
+- **Istanza**: ~$0.114/ora (~$83/mese per 1 istanza)
 - **Storage**: $0.10/GB-mese (primo GB gratis, poi cresce dinamicamente)
 - **I/O**: $0.20 per milione di richieste
 - **Backup**: $0.021/GB-mese (oltre il retention period)
 
-**Totale stimato**: ~$35-50/mese per utilizzo di sviluppo
+**Totale stimato**: ~$85-100/mese per utilizzo di sviluppo
 
 💡 **Per minimizzare i costi:**
 - Usa solo 1 istanza (`instance_count = 1`)
@@ -312,8 +277,27 @@ Aurora richiede almeno 2 subnet in AZ diverse. Il codice usa automaticamente tut
 - Considera Aurora Serverless v2 per carichi variabili
 - Le password devono rispettare i requisiti AWS (8-41 caratteri, no @/"/)
 
-## Autore
 
-Created by: alnao  
-Example: AWS-Esempio10-RDS  
-Terraform Version: >= 1.0
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l'obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
+
+## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
+Public projects 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
+*Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.

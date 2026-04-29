@@ -7,7 +7,7 @@ variable "region" {
 variable "cluster_identifier" {
   description = "Nome del cluster Aurora"
   type        = string
-  default     = "alnao-terraform-aws-esempio10-aurora"
+  default     = "alnao-dev-terraform-esempio10-aurora"
 }
 
 variable "engine" {
@@ -42,9 +42,9 @@ variable "master_password" {
 }
 
 variable "instance_class" {
-  description = "Classe dell'istanza RDS (più piccola: db.t3.small)"
+  description = "Classe dell'istanza RDS (più piccola per Aurora MySQL 3.x: db.t3.medium)"
   type        = string
-  default     = "db.t3.small"
+  default     = "db.t3.medium"
 }
 
 variable "instance_count" {

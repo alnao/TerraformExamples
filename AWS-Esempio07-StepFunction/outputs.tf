@@ -18,6 +18,10 @@ output "logger_function_arn" {
   value = aws_lambda_function.logger.arn
 }
 
+output "logger_function_name" {
+  value = aws_lambda_function.logger.function_name
+}
+
 output "test_command" {
   value = "aws s3 cp test.txt s3://${aws_s3_bucket.source.id}/test.txt"
 }

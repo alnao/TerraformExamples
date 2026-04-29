@@ -3,11 +3,11 @@ variable "region" {
 }
 
 variable "api_name" {
-  default = "alnao-terraform-aws-esempio08-api"
+  default = "alnao-dev-terraform-esempio08-api"
 }
 
 variable "bucket_name" {
-  default = "alnao-terraform-aws-esempio08-api-bucket"
+  default = "alnao-dev-terraform-esempio08-api-bucket"
 }
 
 variable "force_destroy" {

@@ -8,13 +8,13 @@ master_username    = "admin"
 master_password    = "ChangeMe123!SecurePassword"
 
 # Instance Configuration
-instance_class = "db.t3.small"
+instance_class = "db.t3.medium"
 instance_count = 1
 
 # Security
 publicly_accessible = true
 allowed_cidr_blocks = ["0.0.0.0/0"]  # MODIFICA: Limita al tuo IP per sicurezza
-# allowed_cidr_blocks = ["YOUR_IP/32"]
+# allowed_cidr_blocks = ["YOUR_IP/32"] # MY_IP=$(curl -s https://api.ipify.org)
 
 # Backup
 backup_retention_period = 7

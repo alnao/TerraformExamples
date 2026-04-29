@@ -20,7 +20,7 @@ variable "environment" {
 variable "bucket_name" {
   description = "Nome del bucket S3 principale"
   type        = string
-  default     = "alnao-terraform-aws-esempio11-storage"
+  default     = "alnao-dev-terraform-esempio11-storage"
 }
 
 variable "force_destroy_bucket" {
@@ -70,7 +70,7 @@ variable "rds_engine_version" {
 variable "rds_instance_class" {
   description = "Classe istanza RDS"
   type        = string
-  default     = "db.t3.small"
+  default     = "db.t3.medium"
 }
 
 variable "rds_database_name" {

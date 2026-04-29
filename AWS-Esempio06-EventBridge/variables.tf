@@ -7,7 +7,7 @@ variable "region" {
 variable "source_bucket_name" {
   description = "Nome del bucket S3 sorgente"
   type        = string
-  default     = "alnao-terraform-aws-esempio06-eventbridge-bucket"
+  default     = "alnao-dev-terraform-esempio06-eventbridge-bucket"
 }
 
 variable "force_destroy" {
@@ -26,7 +26,7 @@ variable "enable_eventbridge_notification" {
 variable "lambda_function_name" {
   description = "Nome della Lambda function"
   type        = string
-  default     = "alnao-terraform-aws-esempio06-eventbridge-lambda"
+  default     = "alnao-dev-terraform-esempio06-eventbridge-lambda"
 }
 
 variable "lambda_runtime" {
@@ -57,7 +57,7 @@ variable "lambda_environment_variables" {
 variable "eventbridge_rule_name" {
   description = "Nome della EventBridge rule"
   type        = string
-  default     = "alnao-terraform-aws-esempio06-eventbridge-rule"
+  default     = "alnao-dev-terraform-esempio06-eventbridge-rule"
 }
 
 variable "eventbridge_rule_state" {

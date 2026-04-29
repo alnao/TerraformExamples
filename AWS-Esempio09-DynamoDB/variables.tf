@@ -7,7 +7,7 @@ variable "region" {
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
-  default     = "alnao-terraform-aws-esempio09-dynamodb"
+  default     = "alnao-dev-terraform-esempio09-dynamodb"
 }
 
 # Billing configuration

@@ -1,50 +1,94 @@
 # ===================================================================================
-# CONFIGURAZIONE ESEMPIO - Cosmos DB MongoDB
+# CONFIGURAZIONE ESEMPIO — AZURE-Esempio09-CosmosMongo
 # ===================================================================================
 # Copia questo file in terraform.tfvars e modifica i valori
 
 # Azure Subscription
-subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Non serve terraform.tfvars per la subscription: impostala come variabile d'ambiente dopo az login:
+#   export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
-# Resource Group
+# Resource Group e Location
 # resource_group_name = "alnao-terraform-esempio09-cosmosmongo"
-# location           = "westeurope"
+# location            = "westeurope"
 
-# Cosmos DB Mongo Cluster (nome deve essere univoco globalmente)
-# cosmosdb_account_name = "alnao-cosmosdb-mongo-123"
+# ===================================================================================
+# CosmosDB Mongo Cluster (≈ aws_dynamodb_table)
+# ===================================================================================
+# cosmosdb_account_name = "alnao-terraform-esempio09-cosmosmongo"   # univoco globalmente
+# mongodb_version       = "5.0"    # "5.0" | "6.0" | "7.0"
+# compute_tier          = "Free"   # "Free" | "M25" | "M30" | "M40" | "M50" | "M60" | "M80"
+# storage_size_in_gb    = 32
+# high_availability_mode = "Disabled"  # "Disabled" | "SameZone" | "ZoneRedundantPreferred"
 
-# MongoDB Credentials
+# MongoDB credentials
 # mongodb_username = "adminuser"
-# mongodb_password = "YourSecurePassword123!"  # ⚠️ IMPORTANTE: Cambia questa password!
+# mongodb_password = "YourSecurePassword123!"   # ⚠️ IMPORTANTE: cambia questa password!
 
-# Network Configuration
-# enable_public_network_access = "Enabled"  # "Enabled" o "Disabled"
+# Database e Collections
+# mongodb_database_name        = "esempio09db"
+# mongodb_collection_name      = "annotazioni"
+# mongodb_blob_collection_name = "blob_metadata"
 
 # ===================================================================================
-# Private Endpoint Configuration (OPZIONALE)
+# Change Feed (≈ DynamoDB Streams)
 # ===================================================================================
-# Decommentare e configurare solo se si vuole usare Private Endpoint
-# Richiede risorse di rete esistenti: VNet, Subnet e Private DNS Zone
+# enable_change_feed = false  # true per abilitare Change Streams (preview)
 
+# ===================================================================================
+# Network
+# ===================================================================================
+# enable_public_network_access = "Enabled"   # "Enabled" | "Disabled"
+
+# Firewall rule per il tuo IP (via Azure CLI):
+# enable_firewall_rule = true
+# my_ip_address        = "x.x.x.x"   # oppure: $(curl -s ifconfig.me)
+# Shortcut: terraform apply -var="enable_firewall_rule=true" -var="my_ip_address=$(curl -s ifconfig.me)"
+
+# Private Endpoint (opzionale, richiede VNet e DNS Zone esistenti):
 enable_private_endpoint = false
-
-# Se enable_private_endpoint = true, configurare i seguenti parametri:
-# private_endpoint_subnet_name  = "subnet-private-endpoint"
-# virtual_network_name          = "vnet-example"
-# network_resource_group_name   = "rg-network"
-# private_dns_zone_name         = "privatelink.mongocluster.cosmos.azure.com"
-# dns_resource_group_name       = "rg-dns"
+# private_endpoint_subnet_name = "subnet-private-endpoint"
+# virtual_network_name         = "vnet-example"
+# network_resource_group_name  = "rg-network"
+# private_dns_zone_name        = "privatelink.mongocluster.cosmos.azure.com"
+# dns_resource_group_name      = "rg-dns"
 
 # ===================================================================================
-# Azure Key Vault Configuration (OPZIONALE)
+# Azure Key Vault (bonus, non presente in AWS-Esempio09)
 # ===================================================================================
-# Abilita la creazione di un Key Vault per salvare i secrets in modo sicuro
-# (connection string, username, password)
-
 # enable_key_vault = true
-# key_vault_name   = "alnao-terraform-es9-key"  # Deve essere univoco globalmente (3-24 caratteri)
+# key_vault_name   = "alnao-terraform-es9-key"   # univoco globalmente, 3-24 caratteri
 
+# ===================================================================================
+# Blob Function Integration (≈ enable_s3_lambda_integration di AWS-Esempio09)
+# ===================================================================================
+enable_blob_function_integration = true
+
+# storage_account_name = "alnaoterrafes09func"   # 3-24 chars, solo minuscole e numeri
+# function_app_name    = "alnao-terraform-es09-func"
+
+# Tracciamento eliminazioni blob (≈ enable_delete_tracking di AWS-Esempio09):
+# enable_delete_tracking = false
+
+# ===================================================================================
+# Application Insights (≈ CloudWatch Log Group di AWS-Esempio09)
+# ===================================================================================
+# enable_application_insights = false
+# log_retention_days          = 7
+
+# ===================================================================================
+# Event Grid (≈ DynamoDB Streams / EventBridge monitoring)
+# ===================================================================================
+# enable_event_grid = false
+
+# ===================================================================================
+# Monitor Alerts (≈ aws_cloudwatch_metric_alarm di AWS-Esempio09)
+# ===================================================================================
+# enable_monitor_alerts    = false
+# monitor_alert_threshold  = 10000
+
+# ===================================================================================
 # Tags
+# ===================================================================================
 tags = {
   Environment = "Dev"
   Owner       = "alnao"

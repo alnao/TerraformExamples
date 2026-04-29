@@ -149,6 +149,16 @@ resource "aws_lambda_function_url" "main" {
   }
 }
 
+# Permission per permettere l'accesso pubblico al Function URL
+resource "aws_lambda_permission" "func_url" {
+  count                  = var.enable_function_url && var.function_url_auth_type == "NONE" ? 1 : 0
+  statement_id           = "AllowPublicInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.main.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
 # Lambda Alias (opzionale)
 resource "aws_lambda_alias" "main" {
   count            = var.create_alias ? 1 : 0

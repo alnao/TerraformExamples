@@ -30,3 +30,12 @@ output "api_key" {
   value     = var.api_key_required ? aws_api_gateway_api_key.main[0].value : null
   sensitive = true
 }
+
+output "lambda_name_get" {
+  value = aws_lambda_function.list_files.function_name
+}
+
+output "lambda_name_post" {
+  value = aws_lambda_function.calculate_hypotenuse.function_name
+}
+

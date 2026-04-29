@@ -13,4 +13,3 @@ data "azurerm_private_dns_zone" "internal" {
   name                = var.private_dns_zone_name
   resource_group_name = var.dns_resource_group_name
 }
-

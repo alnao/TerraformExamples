@@ -1,7 +1,7 @@
 # AWS Esempio 02 - Istanza EC2 con Modulo del Registry
 
 Questo esempio mostra come creare un'istanza EC2 utilizzando il **modulo ufficiale** dal Terraform Registry invece di definire direttamente le risorse AWS.
-- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati, prestare attanzione prima di eseguire qualsiasi comando ⚠️
+- ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
 
 ## Modulo utilizzato
 

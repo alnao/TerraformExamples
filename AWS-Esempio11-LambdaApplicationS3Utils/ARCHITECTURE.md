@@ -226,7 +226,7 @@ User → API Gateway → Lambda search_files
 
 ### RDS Aurora MySQL
 - **Engine**: aurora-mysql 8.0
-- **Instance**: db.t3.small
+- **Instance**: db.t3.medium
 - **VPC**: Default VPC
 - **Security**: Security Group con accesso solo da Lambda
 - **Credentials**: Secrets Manager (auto-generated password)
@@ -326,7 +326,7 @@ User → API Gateway → Lambda search_files
 - S3: Storage + requests
 
 ### Fixed Cost
-- RDS Aurora t3.small: ~$35/month
+- RDS Aurora t3.medium: ~$85/month
 - Secrets Manager: $0.40/secret/month
 
 ### Ottimizzazioni
