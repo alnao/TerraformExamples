@@ -7,7 +7,7 @@ resource "aws_cloudwatch_event_rule" "s3_scan_schedule" {
   name                = "${var.project_name}-s3-scan-schedule"
   description         = "Scansione S3 giornaliera"
   schedule_expression = var.s3_scan_schedule_expression
-  is_enabled          = var.enable_s3_scan_schedule
+  state               = var.enable_s3_scan_schedule ? "ENABLED" : "DISABLED"
 
   tags = local.common_tags
 }

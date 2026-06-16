@@ -29,6 +29,12 @@ variable "force_destroy_bucket" {
   default     = true
 }
 
+variable "s3_public_read" {
+  description = "Abilita accesso pubblico in lettura al bucket S3. ATTENZIONE: espone tutti i file pubblicamente. Usare solo per hosting statico."
+  type        = bool
+  default     = false
+}
+
 # DynamoDB Configuration
 variable "dynamodb_logs_table_name" {
   description = "Nome tabella DynamoDB per i log"
@@ -79,6 +85,12 @@ variable "rds_database_name" {
   default     = "esempio11db"
 }
 
+variable "rds_skip_final_snapshot" {
+  description = "Salta lo snapshot finale alla distruzione del cluster RDS. Impostare a false in produzione."
+  type        = bool
+  default     = true
+}
+
 # Lambda Configuration
 variable "lambda_runtime" {
   description = "Runtime per le Lambda functions"
@@ -96,6 +108,24 @@ variable "lambda_memory_size" {
   description = "Memory size in MB per le Lambda"
   type        = number
   default     = 512
+}
+
+variable "lambda_layer_arns_excel" {
+  description = "Lista ARN dei Lambda Layer per excel_to_csv (deve contenere openpyxl). Lasciare vuoto se non disponibile."
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_layer_arns_rds" {
+  description = "Lista ARN dei Lambda Layer per upload_to_rds (deve contenere pymysql). Lasciare vuoto se non disponibile."
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_layer_arns_sftp" {
+  description = "Lista ARN dei Lambda Layer per sftp_send (deve contenere paramiko). Lasciare vuoto se non disponibile."
+  type        = list(string)
+  default     = []
 }
 
 # API Gateway Configuration
@@ -128,7 +158,7 @@ variable "s3_scan_schedule_expression" {
 variable "sftp_private_key_ssm_parameter" {
   description = "Nome del parametro SSM per la chiave privata SFTP (formato RSA)"
   type        = string
-  default     = "/esempio-11/sftp/private-key"
+  default     = "/alnao/dev/terraform/esempio-11/sftp/private-key"
 }
 
 # CloudWatch Configuration

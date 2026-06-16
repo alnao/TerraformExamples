@@ -174,6 +174,29 @@ resource "aws_api_gateway_integration" "files_search" {
   uri                     = aws_lambda_function.search_files.invoke_arn
 }
 
+# Resource /read-from-rds
+resource "aws_api_gateway_resource" "read_from_rds" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
+  path_part   = "read-from-rds"
+}
+
+resource "aws_api_gateway_method" "read_from_rds_get" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.read_from_rds.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "read_from_rds" {
+  rest_api_id             = aws_api_gateway_rest_api.main.id
+  resource_id             = aws_api_gateway_resource.read_from_rds.id
+  http_method             = aws_api_gateway_method.read_from_rds_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.read_from_rds.invoke_arn
+}
+
 # Deployment
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -183,24 +206,35 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_resource.presigned_url.id,
       aws_api_gateway_method.presigned_url_post.id,
       aws_api_gateway_integration.presigned_url.id,
+      aws_api_gateway_method.presigned_url_options.id,
       aws_api_gateway_resource.extract_zip.id,
       aws_api_gateway_method.extract_zip_post.id,
       aws_api_gateway_integration.extract_zip.id,
+      aws_api_gateway_method.extract_zip_options.id,
       aws_api_gateway_resource.excel_to_csv.id,
       aws_api_gateway_method.excel_to_csv_post.id,
       aws_api_gateway_integration.excel_to_csv.id,
+      aws_api_gateway_method.excel_to_csv_options.id,
       aws_api_gateway_resource.upload_to_rds.id,
       aws_api_gateway_method.upload_to_rds_post.id,
       aws_api_gateway_integration.upload_to_rds.id,
+      aws_api_gateway_method.upload_to_rds_options.id,
       aws_api_gateway_resource.sftp_send.id,
       aws_api_gateway_method.sftp_send_post.id,
       aws_api_gateway_integration.sftp_send.id,
+      aws_api_gateway_method.sftp_send_options.id,
       aws_api_gateway_resource.files.id,
       aws_api_gateway_method.files_get.id,
       aws_api_gateway_integration.files.id,
+      aws_api_gateway_method.files_options.id,
       aws_api_gateway_resource.files_search.id,
       aws_api_gateway_method.files_search_get.id,
       aws_api_gateway_integration.files_search.id,
+      aws_api_gateway_method.files_search_options.id,
+      aws_api_gateway_resource.read_from_rds.id,
+      aws_api_gateway_method.read_from_rds_get.id,
+      aws_api_gateway_integration.read_from_rds.id,
+      aws_api_gateway_method.read_from_rds_options.id,
     ]))
   }
 

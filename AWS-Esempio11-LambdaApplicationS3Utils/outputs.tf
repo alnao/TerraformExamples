@@ -45,7 +45,8 @@ output "api_endpoints" {
     presigned_url = "${aws_api_gateway_stage.main.invoke_url}/presigned-url"
     extract_zip   = "${aws_api_gateway_stage.main.invoke_url}/extract-zip"
     excel_to_csv  = "${aws_api_gateway_stage.main.invoke_url}/excel-to-csv"
-    upload_to_rds = "${aws_api_gateway_stage.main.invoke_url}/upload-to-rds"
+    upload_to_rds  = "${aws_api_gateway_stage.main.invoke_url}/upload-to-rds"
+    read_from_rds = "${aws_api_gateway_stage.main.invoke_url}/read-from-rds"
     sftp_send     = "${aws_api_gateway_stage.main.invoke_url}/sftp-send"
     list_files    = "${aws_api_gateway_stage.main.invoke_url}/files"
     search_files  = "${aws_api_gateway_stage.main.invoke_url}/files/search"
@@ -58,7 +59,8 @@ output "lambda_functions" {
     presigned_url = aws_lambda_function.presigned_url.function_name
     extract_zip   = aws_lambda_function.extract_zip.function_name
     excel_to_csv  = aws_lambda_function.excel_to_csv.function_name
-    upload_to_rds = aws_lambda_function.upload_to_rds.function_name
+    upload_to_rds  = aws_lambda_function.upload_to_rds.function_name
+    read_from_rds = aws_lambda_function.read_from_rds.function_name
     sftp_send     = aws_lambda_function.sftp_send.function_name
     s3_scan       = aws_lambda_function.s3_scan.function_name
     list_files    = aws_lambda_function.list_files.function_name

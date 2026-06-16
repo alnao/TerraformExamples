@@ -2,71 +2,55 @@ import json
 import boto3
 import os
 from datetime import datetime
-from decimal import Decimal
+
+from utils import log_operation, api_response
 
 s3_client = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
 
 BUCKET_NAME = os.environ['BUCKET_NAME']
 SCAN_TABLE = os.environ['DYNAMODB_SCAN_TABLE']
 LOGS_TABLE = os.environ['DYNAMODB_LOGS_TABLE']
 
-def log_operation(operation, details, status='success'):
-    """Registra operazione nella tabella logs"""
-    table = dynamodb.Table(LOGS_TABLE)
-    try:
-        table.put_item(
-            Item={
-                'id': f"{operation}-{datetime.now().isoformat()}",
-                'timestamp': Decimal(str(datetime.now().timestamp())),
-                'operation': operation,
-                'details': details,
-                'status': status
-            }
-        )
-    except Exception as e:
-        print(f"Errore log: {e}")
 
 def lambda_handler(event, context):
     """
-    Scansiona bucket S3 e salva lista file su DynamoDB
-    Invocata da EventBridge scheduler (giornaliera)
+    Scansiona il bucket S3 e salva la lista dei file su DynamoDB.
+    Invocata da EventBridge scheduler (default: giornaliera alle 02:00 UTC).
     """
     try:
+        dynamodb = boto3.resource('dynamodb')
         scan_table = dynamodb.Table(SCAN_TABLE)
         scan_date = datetime.now().strftime('%Y-%m-%d')
-        
-        # Lista tutti i file nel bucket
+
+        # Lista tutti i file nel bucket con paginazione
         paginator = s3_client.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=BUCKET_NAME)
-        
+
         files_processed = 0
         total_size = 0
-        
-        for page in pages:
-            if 'Contents' not in page:
-                continue
-            
-            for obj in page['Contents']:
-                file_key = obj['Key']
-                file_size = obj['Size']
-                last_modified = obj['LastModified'].isoformat()
-                
-                # Salva in DynamoDB
-                scan_table.put_item(
-                    Item={
-                        'file_key': file_key,
+
+        # batch_writer gestisce automaticamente:
+        # - batching a gruppi di 25 (limite DynamoDB)
+        # - retry degli UnprocessedItems
+        with scan_table.batch_writer() as batch:
+            for page in pages:
+                if 'Contents' not in page:
+                    continue
+
+                for obj in page['Contents']:
+                    batch.put_item(Item={
+                        'file_key': obj['Key'],
                         'scan_date': scan_date,
-                        'size': file_size,
-                        'last_modified': last_modified,
+                        'size': obj['Size'],
+                        'last_modified': obj['LastModified'].isoformat(),
                         'etag': obj.get('ETag', '').strip('"')
-                    }
-                )
-                
-                files_processed += 1
-                total_size += file_size
-        
+                    })
+
+                    files_processed += 1
+                    total_size += obj['Size']
+
         log_operation(
+            LOGS_TABLE,
             's3_scan',
             {
                 'scan_date': scan_date,
@@ -74,20 +58,14 @@ def lambda_handler(event, context):
                 'total_size': total_size
             }
         )
-        
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'S3 scan completed successfully',
-                'scan_date': scan_date,
-                'files_processed': files_processed,
-                'total_size': total_size
-            })
-        }
-        
+
+        return api_response(200, {
+            'message': 'Scansione S3 completata con successo',
+            'scan_date': scan_date,
+            'files_processed': files_processed,
+            'total_size': total_size
+        }, cors=False)
+
     except Exception as e:
-        log_operation('s3_scan', {'error': str(e)}, 'error')
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        log_operation(LOGS_TABLE, 's3_scan', {'error': str(e)}, 'error')
+        return api_response(500, {'error': str(e)}, cors=False)
