@@ -1,0 +1,10 @@
+region             = "eu-central-1"
+project_name       = "alnao-dev-terraform-esempio12-gluejob"
+bucket_name        = "alnao-dev-terraform-esempio12-gluejob"
+step_function_name = "alnao-dev-terraform-esempio12-gluejob-sf"
+glue_job_name      = "alnao-dev-terraform-esempio12-glue-job"
+
+# Imposta gli ARN dei layer necessari alla Lambda excel2csv (openpyxl)
+lambda_layer_arns_excel2csv = [
+  "arn:aws:lambda:eu-central-1:123456789012:layer:openpyxl:1"
+]

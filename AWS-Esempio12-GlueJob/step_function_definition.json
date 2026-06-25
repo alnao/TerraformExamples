@@ -1,0 +1,51 @@
+{
+  "Comment": "Workflow conversione Excel -> CSV e avvio Glue",
+  "StartAt": "Excel2csvLambda",
+  "States": {
+    "Excel2csvLambda": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${excel2csv_lambda_arn}",
+        "Payload.$": "$"
+      },
+      "OutputPath": "$.Payload",
+      "Next": "ChoiceState"
+    },
+    "ChoiceState": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.flag_processo",
+          "BooleanEquals": true,
+          "Next": "GlueProcess"
+        },
+        {
+          "Variable": "$.flag_processo",
+          "BooleanEquals": false,
+          "Next": "Concludi"
+        }
+      ]
+    },
+    "GlueProcess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${glue_job_name}",
+        "Arguments": {
+          "--numero_righe.$": "$.numero_righe",
+          "--file_name.$": "$.file_name"
+        }
+      },
+      "ResultPath": "$.glue_job_result",
+      "ResultSelector": {
+        "JobRunState.$": "$.JobRunState"
+      },
+      "Next": "Concludi"
+    },
+    "Concludi": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
