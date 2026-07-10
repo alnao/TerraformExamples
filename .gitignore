@@ -6,6 +6,7 @@
 
 lambda_*.zip
 function_*.zip
+response.json
 
 # .tfstate files
 *.tfstate

@@ -1,0 +1,24 @@
+# Regione AWS in cui distribuire le risorse
+region = "eu-central-1"
+
+# Prefisso del progetto per i nomi delle risorse
+project_name = "alnao-dev-terraform-es13"
+
+# Email alla quale inviare le notifiche dei messaggi (lasciare vuoto per non configurare la subscription)
+# IMPORTANTE: Dopo il deployment, AWS invierà un'email di conferma a questo indirizzo. 
+# È necessario cliccare sul link "Confirm Subscription" per iniziare a ricevere le notifiche.
+notification_email = "your-email@example.com"
+
+# Nomi personalizzati delle risorse (opzionali)
+# lambda_function_name = "alnao-dev-terraform-es13-processor"
+# dynamodb_table_name  = "alnao-dev-terraform-es13-logs"
+# sqs_queue_name       = "alnao-dev-terraform-es13-queue"
+# sns_topic_name       = "alnao-dev-terraform-es13-topic"
+
+# Tags da applicare alle risorse
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio13SQSSNS"
+  CreatedBy   = "Terraform"
+}
