@@ -1,0 +1,31 @@
+region                    = "eu-central-1"
+project_name              = "alnao-dev-terraform-esempio15-wordpress-scaling"
+instance_type             = "t3.micro"
+key_name                  = ""
+
+# Sicurezza laboratorio: limita almeno SSH al tuo IP
+allowed_http_cidr         = ["0.0.0.0/0"]
+allowed_ssh_cidr          = ["xxx.xxx.xxx.xxx/x"]
+
+enable_https              = true
+acm_certificate_arn       = "arn:aws:acm:eu-central-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# RDS
+db_name                   = "wordpressdb"
+db_username               = "wpadmin"
+db_password               = "ChangeMe123!"
+db_instance_class         = "db.t3.micro"
+db_allocated_storage      = 20
+rds_multi_az              = false
+rds_backup_retention_period = 0
+rds_deletion_protection   = false
+
+# Auto Scaling
+asg_min_size              = 2
+asg_desired_capacity      = 2
+asg_max_size              = 4
+cpu_target_value          = 55
+alb_request_target_value  = 500
+
+temporary_desired_capacity = 3
+temporary_duration_hours   = 4

@@ -1,0 +1,32 @@
+region       = "eu-central-1"
+project_name = "alnao-dev-terraform-esempio16-rekognition"
+
+# Nomi risorse: se lasciati vuoti vengono derivati da project_name
+bucket_name         = ""
+website_bucket_name = ""
+table_name          = ""
+api_name            = ""
+stage_name          = "prod"
+
+# Parola chiave che marca l'immagine come rilevante (confronto case-insensitive)
+keyword_rilevante = "airplane"
+min_confidence    = 75
+max_labels        = 15
+
+# Upload
+input_prefix         = "input/"
+presigned_expiration = 3600
+
+# CORS: in laboratorio "*", in produzione l'URL del sito
+# cors_allowed_origins = ["http://alnao-dev-terraform-esempio16-rekognition-web.s3-website.eu-central-1.amazonaws.com"]
+cors_allowed_origins = ["*"]
+
+force_destroy      = true
+log_retention_days = 7
+
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio16RekognitionImageDetector"
+  CreatedBy   = "Terraform"
+}
