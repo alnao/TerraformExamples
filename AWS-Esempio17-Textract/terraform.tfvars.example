@@ -1,0 +1,87 @@
+region       = "eu-central-1"
+project_name = "alnao-dev-terraform-esempio17-textract"
+
+# Nomi risorse: se lasciati vuoti vengono derivati da project_name
+bucket_name         = ""
+website_bucket_name = ""
+api_name            = ""
+sns_topic_name      = ""
+stage_name          = "prod"
+
+# Cartelle del bucket
+input_prefix         = "input/"
+output_prefix        = "output/"
+raw_prefix           = "output-raw/"
+jobs_prefix          = "jobs/"
+jobs_expiration_days = 7
+
+# ------------------------------------
+# Default Textract
+# Sono i valori usati dagli upload che non portano opzioni con se'
+# (per esempio un file copiato con "aws s3 cp"). Dalla pagina web ogni
+# upload puo' scegliere i propri.
+# ------------------------------------
+
+# Lista vuota = DetectDocumentText (solo testo, piu' economica).
+# Valori ammessi: TABLES, FORMS, SIGNATURES, LAYOUT, QUERIES
+default_feature_types = []
+# default_feature_types = ["TABLES", "FORMS"]
+
+# Se valorizzata, la feature QUERIES viene attivata in automatico.
+# Attenzione: Textract accetta SOLO caratteri ASCII nel testo delle query,
+# quindi "Qual e' l'importo" va bene mentre "Qual e` l'importo" con la lettera
+# accentata verrebbe rifiutato.
+default_queries = []
+# default_queries = [
+#   { text = "Qual e' l'importo totale?", alias = "totale" },
+#   { text = "Qual e' la data del documento?", alias = "data" },
+# ]
+
+# Confidenza minima delle righe tenute nel JSON (filtro applicato dalla Lambda)
+min_confidence = 80
+
+# Massimo 15 query per documento: e' il limite delle operazioni sincrone e
+# viene tenuto anche sui PDF per avere un comportamento unico
+max_queries = 15
+
+# Salva anche la risposta grezza di Textract sotto raw_prefix
+salva_blocchi_grezzi = false
+
+# ------------------------------------
+# Upload
+# ------------------------------------
+presigned_expiration = 3600
+preview_expiration   = 900
+# Immagini: via sincrona, limite Textract 10 MB e una sola pagina
+max_upload_mb = 10
+# PDF: via asincrona, Textract arriva a 500 MB e 3.000 pagine. Il default e'
+# tenuto molto piu' basso perche' ogni pagina analizzata viene fatturata.
+max_pdf_mb = 100
+# Prefissa la key con data/ora: due upload con lo stesso nome non si sovrascrivono
+aggiungi_timestamp = true
+
+# ------------------------------------
+# Lambda
+# ------------------------------------
+lambda_analyze_timeout = 120
+lambda_analyze_memory  = 512
+# La lambda che raccoglie i risultati dei PDF fa molte chiamate Get* in
+# sequenza, quindi ha bisogno di piu' tempo e piu' memoria delle altre
+lambda_collect_timeout = 300
+lambda_collect_memory  = 1024
+# Ogni retry e' una nuova pagina fatturata da Textract: meglio tenerlo basso
+lambda_max_retry = 1
+
+# CORS: in laboratorio "*", in produzione l'URL del sito
+# cors_allowed_origins = ["http://alnao-dev-terraform-esempio17-textract-web.s3-website.eu-central-1.amazonaws.com"]
+cors_allowed_origins = ["*"]
+
+force_destroy      = true
+log_retention_days = 7
+
+tags = {
+  Environment = "Dev"
+  Owner       = "alnao"
+  Example     = "Esempio17Textract"
+  CreatedBy   = "Terraform"
+}

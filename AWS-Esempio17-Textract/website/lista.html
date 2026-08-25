@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textract - Documenti analizzati</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="config.js"></script>
+  <style>
+    .testo-estratto {
+      white-space: pre-wrap;
+      max-height: 8rem;
+      overflow: auto;
+      font-size: .8rem;
+    }
+    .modal-testo { white-space: pre-wrap; font-size: .85rem; }
+  </style>
+</head>
+<body class="bg-body-tertiary">
+
+<nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">&#128196; Textract Document Reader</a>
+    <div class="navbar-nav">
+      <a class="nav-link" href="index.html">Carica documento</a>
+      <a class="nav-link active" href="lista.html">Documenti analizzati</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4">
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex flex-wrap gap-3 align-items-center justify-content-between">
+      <h5 class="mb-0">Documenti analizzati</h5>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <input type="search" class="form-control form-control-sm" id="ricerca"
+               style="width: 220px" placeholder="Cerca nel nome o nel testo">
+        <select class="form-select form-select-sm" id="filtro-stato" style="width: 160px">
+          <option value="tutti">Tutti gli stati</option>
+          <option value="completati">Completati</option>
+          <option value="in_corso">In corso / in elaborazione</option>
+          <option value="errore">In errore</option>
+        </select>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="auto-refresh" checked>
+          <label class="form-check-label small" for="auto-refresh">Auto</label>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" id="btn-ricarica">
+          <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status"></span>
+          Ricarica
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 110px">Anteprima</th>
+              <th style="width: 22%">File</th>
+              <th style="width: 120px">Stato</th>
+              <th style="width: 15%">Estratto</th>
+              <th>Testo</th>
+              <th style="width: 120px">Dettaglio</th>
+            </tr>
+          </thead>
+          <tbody id="tabella">
+            <tr><td colspan="6" class="text-center text-secondary py-4">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white text-secondary small" id="riepilogo"></div>
+  </div>
+
+  <div id="messaggio" class="mt-3"></div>
+
+</div>
+
+<!-- Modale con il risultato completo del documento -->
+<div class="modal fade" id="modale-dettaglio" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modale-titolo">Dettaglio</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modale-corpo">
+        <div class="text-center text-secondary py-4">Caricamento...</div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-secondary" id="modale-json" target="_blank" rel="noopener">Scarica JSON</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const cfg = window.APP_CONFIG || {};
+  const tabella = document.getElementById('tabella');
+  const riepilogo = document.getElementById('riepilogo');
+  const messaggio = document.getElementById('messaggio');
+  const spinner = document.getElementById('spinner');
+  const filtroStato = document.getElementById('filtro-stato');
+  const ricerca = document.getElementById('ricerca');
+  const autoRefresh = document.getElementById('auto-refresh');
+
+  let ultimoElenco = [];
+  let timerRefresh = null;
+  let caricamentoInCorso = false;
+
+  function escapeHtml(testo) {
+    return String(testo === undefined || testo === null ? '' : testo)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function badgeStato(documento) {
+    if (documento.stato === 'COMPLETATO') {
+      return '<span class="badge text-bg-success">COMPLETATO</span>';
+    }
+    if (documento.stato === 'ERRORE') {
+      return '<span class="badge text-bg-danger" title="' + escapeHtml(documento.error || '') + '">ERRORE</span>';
+    }
+    const rotella = '<span class="spinner-border spinner-border-sm me-1" style="width:.7rem;height:.7rem"></span>';
+    // IN_ELABORAZIONE = job asincrono sul PDF gia' partito, si sta aspettando
+    // la notifica SNS di Textract. IN_CORSO = la Lambda non ha ancora scritto nulla.
+    if (documento.stato === 'IN_ELABORAZIONE') {
+      return '<span class="badge text-bg-info text-dark" title="Job Textract ' +
+        escapeHtml(documento.job_id || '') + '">' + rotella + 'IN ELABORAZIONE</span>' +
+        '<div class="small text-secondary mt-1">job asincrono</div>';
+    }
+    return '<span class="badge text-bg-warning text-dark">' + rotella + 'IN CORSO</span>';
+  }
+
+  function anteprimaHtml(documento) {
+    if (!documento.preview_url) { return '<span class="text-secondary small">n/d</span>'; }
+
+    // Un PDF non si puo' mostrare in un <img>: si disegna un'icona che apre
+    // il file con il presigned URL firmato dalla Lambda.
+    if (documento.is_pdf) {
+      const pagine = ((documento.risultato || {}).stats || {}).n_pages;
+      return '<a href="' + escapeHtml(documento.preview_url) + '" target="_blank" rel="noopener" ' +
+        'class="d-block text-center text-decoration-none border rounded bg-white py-2" ' +
+        'style="width:90px" title="Apri il PDF">' +
+        '<div style="font-size:1.6rem;line-height:1">&#128209;</div>' +
+        '<div class="small text-secondary">PDF' + (pagine ? ' - ' + pagine + ' pag.' : '') + '</div></a>';
+    }
+
+    return '<a href="' + escapeHtml(documento.preview_url) + '" target="_blank" rel="noopener">' +
+      '<img src="' + escapeHtml(documento.preview_url) + '" alt="anteprima" ' +
+      'class="rounded border" style="width:90px;height:64px;object-fit:cover"></a>';
+  }
+
+  /** Riassunto di cosa Textract ha trovato: badge con i contatori. */
+  function estrattoHtml(documento) {
+    const risultato = documento.risultato;
+    if (!risultato) { return '<span class="text-secondary small">in attesa</span>'; }
+    if (documento.stato === 'ERRORE') {
+      return '<span class="small text-danger">' + escapeHtml(risultato.error || documento.error || 'errore') + '</span>';
+    }
+
+    const stats = risultato.stats || {};
+    const badge = [];
+    badge.push('<span class="badge text-bg-light border">' + escapeHtml(risultato.textract_api || '') + '</span>');
+    if (stats.n_pages > 1) {
+      badge.push('<span class="badge text-bg-dark">' + stats.n_pages + ' pagine</span>');
+    }
+    badge.push('<span class="badge text-bg-light border">' + (stats.n_lines || 0) + ' righe</span>');
+    badge.push('<span class="badge text-bg-light border">' + (stats.n_words || 0) + ' parole</span>');
+    if (stats.n_tables) { badge.push('<span class="badge text-bg-info">' + stats.n_tables + ' tabelle</span>'); }
+    if (stats.n_forms) { badge.push('<span class="badge text-bg-info">' + stats.n_forms + ' campi</span>'); }
+    if (stats.n_queries) {
+      badge.push('<span class="badge text-bg-primary">' +
+        (stats.n_queries_answered || 0) + '/' + stats.n_queries + ' query</span>');
+    }
+    if (stats.n_signatures) { badge.push('<span class="badge text-bg-secondary">' + stats.n_signatures + ' firme</span>'); }
+    if (stats.avg_confidence) {
+      badge.push('<span class="badge text-bg-light border">conf. ' + stats.avg_confidence + '%</span>');
+    }
+    return '<div class="d-flex flex-wrap gap-1">' + badge.join('') + '</div>';
+  }
+
+  function testoHtml(documento) {
+    const risultato = documento.risultato;
+    if (!risultato) {
+      return '<span class="text-secondary small">Textract sta ancora lavorando...</span>';
+    }
+    if (documento.stato === 'IN_ELABORAZIONE') {
+      return '<span class="text-secondary small">Job asincrono in corso' +
+        (documento.job_id ? ' (<code>' + escapeHtml(documento.job_id.slice(0, 16)) + '...</code>)' : '') +
+        '. Il testo comparira\' qui quando Textract avra\' finito.</span>';
+    }
+    const testo = risultato.text || '';
+    if (!testo.trim()) {
+      return '<span class="text-secondary small">nessun testo riconosciuto</span>';
+    }
+    return '<div class="testo-estratto border rounded bg-white p-2">' + escapeHtml(testo) + '</div>' +
+      (risultato.text_truncated ? '<div class="small text-secondary mt-1">testo troncato, apri il dettaglio</div>' : '');
+  }
+
+  function fileHtml(documento) {
+    const risultato = documento.risultato || {};
+    const opzioni = risultato.opzioni || {};
+    const righe = [
+      '<div class="fw-semibold">' + escapeHtml(documento.file_name) + '</div>',
+      '<div class="small text-secondary"><code>' + escapeHtml(documento.image_key) + '</code></div>',
+      '<div class="small text-secondary">' +
+        new Date(documento.uploaded_at).toLocaleString('it-IT') + ' - ' +
+        (documento.size_bytes / 1024).toFixed(1) + ' KB</div>'
+    ];
+    if (opzioni.nota) {
+      righe.push('<div class="small fst-italic">' + escapeHtml(opzioni.nota) + '</div>');
+    }
+    return righe.join('');
+  }
+
+  // ---- Tabelle, campi e query nella modale ----
+
+  /** Etichetta "pag. N", mostrata solo sui documenti multipagina. */
+  function etichettaPagina(elemento, nPagine) {
+    if (!nPagine || nPagine < 2 || !elemento.page) { return ''; }
+    return ' <span class="badge text-bg-light border">pag. ' + elemento.page + '</span>';
+  }
+
+  function tabellaHtml(tabella, indice, nPagine) {
+    const intestazioni = new Set(tabella.header_rows || []);
+    const righe = (tabella.rows || []).map((riga, indice) => {
+      const cella = intestazioni.has(indice) ? 'th' : 'td';
+      return '<tr>' + riga.map(v =>
+        '<' + cella + '>' + escapeHtml(v) + '</' + cella + '>').join('') + '</tr>';
+    }).join('');
+    return '<div class="fw-semibold">' +
+      escapeHtml(tabella.title || ('Tabella ' + (indice + 1))) +
+      etichettaPagina(tabella, nPagine) + '</div>' +
+      '<div class="table-responsive mb-3"><table class="table table-sm table-bordered mb-0">' +
+      righe + '</table></div>';
+  }
+
+  function sezione(titolo, contenuto) {
+    if (!contenuto) { return ''; }
+    return '<h6 class="fw-semibold mt-3">' + titolo + '</h6>' + contenuto;
+  }
+
+  function corpoModale(documento) {
+    const risultato = documento.risultato || {};
+    const stats = risultato.stats || {};
+    const opzioni = risultato.opzioni || {};
+    const pezzi = [];
+
+    pezzi.push(
+      '<dl class="row mb-0 small">' +
+      '<dt class="col-sm-3">Nome file</dt><dd class="col-sm-9">' + escapeHtml(risultato.file_name || documento.file_name) + '</dd>' +
+      '<dt class="col-sm-3">Key S3</dt><dd class="col-sm-9"><code>' + escapeHtml(documento.image_key) + '</code></dd>' +
+      '<dt class="col-sm-3">JSON risultato</dt><dd class="col-sm-9"><code>' + escapeHtml(documento.json_key || '-') + '</code></dd>' +
+      '<dt class="col-sm-3">API Textract</dt><dd class="col-sm-9">' + escapeHtml(risultato.textract_api || '-') +
+        ' ' + escapeHtml((risultato.feature_types || []).join(', ')) +
+        ' <span class="badge text-bg-light border">' + escapeHtml(risultato.modalita || '-') + '</span>' +
+        (risultato.job_id ? ' <code class="small">' + escapeHtml(risultato.job_id) + '</code>' : '') + '</dd>' +
+      '<dt class="col-sm-3">Pagine</dt><dd class="col-sm-9">' + (stats.n_pages || 1) + '</dd>' +
+      '<dt class="col-sm-3">Confidenza minima</dt><dd class="col-sm-9">' + escapeHtml(opzioni.min_confidence) + '%' +
+        ' (' + (stats.n_lines_discarded || 0) + ' righe scartate)</dd>' +
+      '<dt class="col-sm-3">Elaborato il</dt><dd class="col-sm-9">' + escapeHtml(risultato.processed_at || '-') +
+        ' in ' + (risultato.duration_ms || 0) + ' ms</dd>' +
+      '</dl>');
+
+    if (documento.stato === 'ERRORE') {
+      pezzi.push('<div class="alert alert-danger mt-3 mb-0">' +
+        escapeHtml(risultato.error || documento.error || 'Errore sconosciuto') + '</div>');
+    }
+
+    // Textract segnala qui le pagine che non e' riuscito a elaborare
+    if ((risultato.warnings || []).length) {
+      pezzi.push('<div class="alert alert-warning mt-3 mb-0 small"><strong>Avvisi di Textract</strong><ul class="mb-0">' +
+        risultato.warnings.map(a =>
+          '<li>' + escapeHtml(a.ErrorCode || 'avviso') +
+          ' - pagine: ' + escapeHtml((a.Pages || []).join(', ')) + '</li>').join('') +
+        '</ul></div>');
+    }
+
+    if ((risultato.queries || []).length) {
+      pezzi.push(sezione('Risposte alle domande',
+        '<table class="table table-sm table-bordered"><thead class="table-light"><tr>' +
+        '<th>Alias</th><th>Domanda</th><th>Risposta</th><th style="width:100px">Confidenza</th></tr></thead><tbody>' +
+        risultato.queries.map(q =>
+          '<tr><td><code>' + escapeHtml(q.alias) + '</code>' +
+            etichettaPagina(q, stats.n_pages) + '</td>' +
+          '<td>' + escapeHtml(q.question) + '</td>' +
+          '<td>' + (q.found
+            ? '<strong>' + escapeHtml(q.answer) + '</strong>'
+            : '<span class="text-secondary">nessuna risposta trovata</span>') + '</td>' +
+          '<td>' + (q.found ? q.confidence + '%' : '-') + '</td></tr>').join('') +
+        '</tbody></table>'));
+    }
+
+    if ((risultato.forms || []).length) {
+      pezzi.push(sezione('Campi del modulo',
+        '<table class="table table-sm table-bordered"><thead class="table-light"><tr>' +
+        '<th>Chiave</th><th>Valore</th><th style="width:100px">Confidenza</th></tr></thead><tbody>' +
+        risultato.forms.map(c =>
+          '<tr><td>' + escapeHtml(c.key) + etichettaPagina(c, stats.n_pages) + '</td>' +
+          '<td>' + escapeHtml(c.value) + '</td>' +
+          '<td>' + c.value_confidence + '%</td></tr>').join('') +
+        '</tbody></table>'));
+    }
+
+    if ((risultato.tables || []).length) {
+      pezzi.push(sezione('Tabelle', risultato.tables
+        .map((t, i) => tabellaHtml(t, i, stats.n_pages)).join('')));
+    }
+
+    if ((risultato.layout || []).length) {
+      pezzi.push(sezione('Layout',
+        '<ul class="small">' + risultato.layout.map(l =>
+          '<li><span class="badge text-bg-light border">' + escapeHtml(l.type) + '</span> ' +
+          escapeHtml(l.text) + '</li>').join('') + '</ul>'));
+    }
+
+    if ((risultato.signatures || []).length) {
+      pezzi.push(sezione('Firme',
+        '<ul class="small">' + risultato.signatures.map((f, i) =>
+          '<li>Firma ' + (i + 1) + ' - confidenza ' + f.confidence + '%' +
+          (stats.n_pages > 1 && f.page ? ' (pagina ' + f.page + ')' : '') + '</li>').join('') + '</ul>'));
+    }
+
+    pezzi.push(sezione('Testo completo',
+      '<div class="modal-testo border rounded bg-body-tertiary p-2">' +
+      escapeHtml(risultato.text || '(nessun testo)') + '</div>'));
+
+    return pezzi.join('');
+  }
+
+  /** La modale rilegge il documento con ?key=... per avere il JSON senza troncature. */
+  async function apriDettaglio(imageKey) {
+    const documentoElenco = ultimoElenco.find(d => d.image_key === imageKey) || {};
+    document.getElementById('modale-titolo').textContent = documentoElenco.file_name || imageKey;
+    document.getElementById('modale-corpo').innerHTML =
+      '<div class="text-center text-secondary py-4">Caricamento...</div>';
+
+    const linkJson = document.getElementById('modale-json');
+    linkJson.classList.toggle('disabled', !documentoElenco.json_url);
+    linkJson.href = documentoElenco.json_url || '#';
+
+    new bootstrap.Modal(document.getElementById('modale-dettaglio')).show();
+
+    try {
+      const risposta = await fetch(cfg.apiBaseUrl + '/documents?key=' + encodeURIComponent(imageKey));
+      const dati = await risposta.json();
+      if (!risposta.ok) { throw new Error(dati.error || 'Errore nella lettura del documento'); }
+      document.getElementById('modale-corpo').innerHTML = corpoModale(dati.item);
+      if (dati.item.json_url) {
+        linkJson.href = dati.item.json_url;
+        linkJson.classList.remove('disabled');
+      }
+    } catch (errore) {
+      document.getElementById('modale-corpo').innerHTML =
+        '<div class="alert alert-danger mb-0">Errore: ' + escapeHtml(errore.message) + '</div>';
+    }
+  }
+
+  async function carica() {
+    if (caricamentoInCorso) { return; }
+    caricamentoInCorso = true;
+    spinner.classList.remove('d-none');
+    messaggio.innerHTML = '';
+
+    const parametri = new URLSearchParams({ limit: '100', stato: filtroStato.value });
+    if (ricerca.value.trim()) { parametri.set('q', ricerca.value.trim()); }
+
+    try {
+      const risposta = await fetch(cfg.apiBaseUrl + '/documents?' + parametri.toString());
+      const dati = await risposta.json();
+      if (!risposta.ok) { throw new Error(dati.error || 'Errore nella lettura dei dati'); }
+
+      ultimoElenco = dati.items || [];
+
+      if (!ultimoElenco.length) {
+        tabella.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' +
+          'Nessun documento trovato. <a href="index.html">Carica il primo documento</a>.</td></tr>';
+      } else {
+        tabella.innerHTML = ultimoElenco.map(documento =>
+          '<tr>' +
+          '<td>' + anteprimaHtml(documento) + '</td>' +
+          '<td>' + fileHtml(documento) + '</td>' +
+          '<td>' + badgeStato(documento) + '</td>' +
+          '<td>' + estrattoHtml(documento) + '</td>' +
+          '<td>' + testoHtml(documento) + '</td>' +
+          '<td><button class="btn btn-sm btn-outline-primary btn-dettaglio" ' +
+            'data-key="' + escapeHtml(documento.image_key) + '"' +
+            (documento.risultato && documento.stato !== 'IN_ELABORAZIONE' ? '' : ' disabled') +
+            '>Apri</button></td>' +
+          '</tr>'
+        ).join('');
+
+        document.querySelectorAll('.btn-dettaglio').forEach(bottone =>
+          bottone.addEventListener('click', () => apriDettaglio(bottone.dataset.key)));
+      }
+
+      riepilogo.textContent =
+        dati.count + ' documenti mostrati - ' + dati.totale_caricate + ' immagini caricate, ' +
+        dati.totale_elaborate + ' gia\' elaborate' +
+        (dati.in_corso ? ' - ' + dati.in_corso + ' in corso' : '') +
+        ' - aggiornato alle ' + new Date().toLocaleTimeString('it-IT');
+
+      programmaRefresh(dati.in_corso > 0);
+    } catch (errore) {
+      tabella.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Errore di caricamento</td></tr>';
+      messaggio.innerHTML = '<div class="alert alert-danger mb-0">Errore: ' + escapeHtml(errore.message) + '</div>';
+      programmaRefresh(false);
+    } finally {
+      caricamentoInCorso = false;
+      spinner.classList.add('d-none');
+    }
+  }
+
+  /**
+   * L'analisi e' asincrona: finche' ci sono documenti "in corso" si ricarica
+   * spesso, poi si rallenta per non tempestare l'API di richieste inutili.
+   */
+  function programmaRefresh(ceDaAspettare) {
+    if (timerRefresh) { clearTimeout(timerRefresh); timerRefresh = null; }
+    if (!autoRefresh.checked) { return; }
+    timerRefresh = setTimeout(carica, ceDaAspettare ? 5000 : 30000);
+  }
+
+  document.getElementById('btn-ricarica').addEventListener('click', carica);
+  filtroStato.addEventListener('change', carica);
+  autoRefresh.addEventListener('change', () => programmaRefresh(false));
+
+  let timerRicerca = null;
+  ricerca.addEventListener('input', () => {
+    if (timerRicerca) { clearTimeout(timerRicerca); }
+    timerRicerca = setTimeout(carica, 400);
+  });
+
+  carica();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

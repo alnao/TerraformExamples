@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textract - Carica documento</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="config.js"></script>
+</head>
+<body class="bg-body-tertiary">
+
+<nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+  <div class="container">
+    <a class="navbar-brand" href="index.html">&#128196; Textract Document Reader</a>
+    <div class="navbar-nav">
+      <a class="nav-link active" href="index.html">Carica documento</a>
+      <a class="nav-link" href="lista.html">Documenti analizzati</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">Carica un documento da leggere</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary">
+            Il file viene caricato nella cartella <code>input/</code> del bucket S3.
+            Una Lambda asincrona chiama Amazon Textract, estrae il testo e salva un JSON
+            in <code>output/</code> con il nome del file e tutto il testo riconosciuto.
+            La pagina <a href="lista.html">Documenti analizzati</a> mostra i risultati man mano che arrivano.<br>
+            Le <strong>immagini</strong> passano dalle operazioni sincrone di Textract e sono pronte in pochi secondi;
+            i <strong>PDF</strong> (anche multipagina) passano dalle operazioni asincrone e richiedono piu' tempo.
+          </p>
+
+          <!-- ---- FILE ---- -->
+          <div class="mb-3">
+            <label for="file" class="form-label fw-semibold">File JPEG, PNG o PDF</label>
+            <input class="form-control" type="file" id="file" accept="image/jpeg,image/png,application/pdf">
+            <div class="form-text">
+              Immagini fino a <span id="max-mb">10</span> MB (limite delle operazioni sincrone),
+              PDF fino a <span id="max-pdf-mb">100</span> MB.
+            </div>
+          </div>
+
+          <div id="anteprima-box" class="mb-3 d-none">
+            <img id="anteprima" class="img-fluid rounded border d-none" alt="anteprima" style="max-height: 280px">
+            <div id="anteprima-pdf" class="border rounded bg-white text-center py-4 d-none">
+              <div style="font-size: 3rem; line-height: 1">&#128209;</div>
+              <div class="text-secondary small">Documento PDF - anteprima non disponibile nel browser</div>
+            </div>
+            <div class="small text-secondary mt-1" id="dettaglio-file"></div>
+          </div>
+
+          <hr>
+
+          <!-- ---- OPZIONI TEXTRACT ---- -->
+          <h6 class="fw-semibold">Cosa deve estrarre Textract</h6>
+          <p class="text-secondary small">
+            Senza nessuna opzione viene usata <code>DetectDocumentText</code>, che restituisce solo il testo
+            ed e' l'operazione piu' economica. Selezionando una o piu' voci viene invece usata
+            <code>AnalyzeDocument</code>, che costa di piu' ma riconosce anche la struttura del documento.
+          </p>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input feature" type="checkbox" value="TABLES" id="f-tables">
+                <label class="form-check-label" for="f-tables">
+                  <strong>TABLES</strong> - ricostruisce le tabelle riga per riga
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input feature" type="checkbox" value="FORMS" id="f-forms">
+                <label class="form-check-label" for="f-forms">
+                  <strong>FORMS</strong> - coppie chiave/valore e caselle di spunta
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input feature" type="checkbox" value="SIGNATURES" id="f-signatures">
+                <label class="form-check-label" for="f-signatures">
+                  <strong>SIGNATURES</strong> - individua le firme
+                </label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input class="form-check-input feature" type="checkbox" value="LAYOUT" id="f-layout">
+                <label class="form-check-label" for="f-layout">
+                  <strong>LAYOUT</strong> - titoli, paragrafi, elenchi, intestazioni
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input feature" type="checkbox" value="QUERIES" id="f-queries">
+                <label class="form-check-label" for="f-queries">
+                  <strong>QUERIES</strong> - domande specifiche sul documento
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- QUERIES ---- -->
+          <div class="mb-3" id="box-queries">
+            <label for="queries" class="form-label fw-semibold">
+              Domande da porre al documento
+              <span class="badge text-bg-secondary" id="conta-query">0</span>
+            </label>
+            <textarea class="form-control font-monospace" id="queries" rows="4"
+                      placeholder="totale | Qual e' l'importo totale della fattura?&#10;Qual e' la data del documento?"></textarea>
+            <div class="form-text">
+              Una domanda per riga, al massimo <span id="max-query">15</span>, fino a 200 caratteri ciascuna.
+              Si puo' anteporre un alias con la barra verticale: <code>alias | domanda</code>.
+              Scrivendo qui almeno una domanda la feature <code>QUERIES</code> viene attivata da sola.
+              <br>Textract accetta <strong>solo caratteri ASCII</strong> nelle domande: scrivere
+              <code>Qual e' il totale?</code> e non <code>Qual &egrave; il totale?</code>.
+              <br><span id="nota-pagine" class="d-none">Solo per i PDF: si possono limitare le pagine
+              scrivendo <code>alias [1-3] | domanda</code> (valori come <code>1</code>,
+              <code>1-3</code>, <code>2-*</code>, <code>*</code>).</span>
+            </div>
+          </div>
+
+          <!-- ---- ALTRI PARAMETRI ---- -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label for="min-confidence" class="form-label fw-semibold">
+                Confidenza minima: <span id="valore-confidence">80</span>%
+              </label>
+              <input type="range" class="form-range" min="0" max="100" step="5" id="min-confidence">
+              <div class="form-text">
+                Le righe con confidenza inferiore vengono scartate dal JSON.
+                Il filtro e' applicato dalla Lambda: Textract non ha un parametro equivalente.
+              </div>
+            </div>
+            <div class="col-md-8">
+              <label for="nota" class="form-label fw-semibold">Nota (facoltativa)</label>
+              <input type="text" class="form-control" id="nota" maxlength="500"
+                     placeholder="es. fattura fornitore marzo">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="blocchi-grezzi">
+                <label class="form-check-label" for="blocchi-grezzi">
+                  Salva anche la risposta completa di Textract (blocchi grezzi)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-light border d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-secondary small">Verra' chiamata:</span>
+            <span class="badge text-bg-primary" id="api-scelta">DetectDocumentText</span>
+            <span class="badge text-bg-secondary" id="modalita-scelta">sincrona</span>
+            <span class="text-secondary small" id="feature-scelte"></span>
+          </div>
+
+          <button class="btn btn-primary" id="btn-carica" disabled>
+            <span class="spinner-border spinner-border-sm d-none" id="spinner" role="status"></span>
+            Carica e analizza
+          </button>
+          <a class="btn btn-outline-secondary" href="lista.html">Vai alla lista</a>
+
+          <div id="messaggio" class="mt-3"></div>
+        </div>
+      </div>
+
+      <p class="text-secondary small mt-3 mb-0">
+        Endpoint API: <code id="api-url"></code>
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const cfg = window.APP_CONFIG || {};
+  const MAX_MB = cfg.maxUploadMb || 10;
+  const MAX_PDF_MB = cfg.maxPdfMb || 100;
+  const MAX_QUERIES = cfg.maxQueries || 15;
+
+  const inputFile = document.getElementById('file');
+  const btnCarica = document.getElementById('btn-carica');
+  const spinner = document.getElementById('spinner');
+  const messaggio = document.getElementById('messaggio');
+  const anteprimaBox = document.getElementById('anteprima-box');
+  const anteprima = document.getElementById('anteprima');
+  const dettaglioFile = document.getElementById('dettaglio-file');
+  const anteprimaPdf = document.getElementById('anteprima-pdf');
+  const queries = document.getElementById('queries');
+  const sliderConfidence = document.getElementById('min-confidence');
+  const checkQueries = document.getElementById('f-queries');
+
+  document.getElementById('api-url').textContent = cfg.apiBaseUrl || 'non configurato';
+  document.getElementById('max-mb').textContent = MAX_MB;
+  document.getElementById('max-pdf-mb').textContent = MAX_PDF_MB;
+  document.getElementById('max-query').textContent = MAX_QUERIES;
+
+  /** Un PDF passa dalle operazioni asincrone di Textract, una immagine no. */
+  function fileSelezionatoEPdf() {
+    const file = inputFile.files[0];
+    if (!file) { return false; }
+    return file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  }
+
+  function limiteMb() {
+    return fileSelezionatoEPdf() ? MAX_PDF_MB : MAX_MB;
+  }
+
+  // Valori di partenza presi dai default configurati in Terraform
+  sliderConfidence.value = cfg.minConfidence !== undefined ? cfg.minConfidence : 80;
+  document.getElementById('valore-confidence').textContent = sliderConfidence.value;
+  document.getElementById('blocchi-grezzi').checked = !!cfg.salvaBlocchiGrezzi;
+  (cfg.defaultFeatureTypes || []).forEach(feature => {
+    const casella = document.querySelector('.feature[value="' + feature + '"]');
+    if (casella) { casella.checked = true; }
+  });
+
+  function escapeHtml(testo) {
+    return String(testo === undefined || testo === null ? '' : testo)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function mostraMessaggio(tipo, html) {
+    messaggio.innerHTML = '<div class="alert alert-' + tipo + ' mb-0">' + html + '</div>';
+  }
+
+  /**
+   * Trasforma il testo dell'area domande in una lista { text, alias, pages }.
+   *
+   * Formati accettati per riga:
+   *   domanda
+   *   alias | domanda
+   *   alias [1-3] | domanda      <- solo sui PDF: limita la query a certe pagine
+   */
+  function leggiQueries() {
+    const perPdf = fileSelezionatoEPdf();
+
+    return queries.value.split('\n')
+      .map(riga => riga.trim())
+      .filter(riga => riga.length > 0)
+      .map((riga, indice) => {
+        const separatore = riga.indexOf('|');
+        if (separatore < 0) {
+          return { alias: 'q' + (indice + 1), text: riga };
+        }
+
+        let alias = riga.slice(0, separatore).trim();
+        const text = riga.slice(separatore + 1).trim();
+
+        // Le pagine si scrivono fra parentesi quadre dopo l'alias
+        const pagine = alias.match(/\[([^\]]+)\]\s*$/);
+        let pages = null;
+        if (pagine) {
+          alias = alias.slice(0, pagine.index).trim();
+          pages = pagine[1].split(',').map(p => p.trim()).filter(p => p.length > 0);
+        }
+
+        const query = { alias: alias || ('q' + (indice + 1)), text: text };
+        // Sulle immagini il campo Pages non e' ammesso: si omette e basta
+        if (pages && pages.length && perPdf) { query.pages = pages; }
+        return query;
+      })
+      .filter(q => q.text.length > 0);
+  }
+
+  function leggiFeatures() {
+    return Array.from(document.querySelectorAll('.feature:checked')).map(c => c.value);
+  }
+
+  /** Tiene allineati il riepilogo dell'API, il contatore query e lo stato del bottone. */
+  function aggiornaRiepilogo() {
+    const elencoQuery = leggiQueries();
+    const features = leggiFeatures();
+
+    // Scrivere una domanda accende QUERIES; toglierle tutte lo spegne
+    if (elencoQuery.length > 0 && !checkQueries.checked) {
+      checkQueries.checked = true;
+    }
+
+    const featuresFinali = leggiFeatures();
+    const usaAnalyze = featuresFinali.length > 0;
+    const perPdf = fileSelezionatoEPdf();
+
+    document.getElementById('conta-query').textContent = elencoQuery.length;
+    document.getElementById('conta-query').className =
+      'badge ' + (elencoQuery.length > MAX_QUERIES ? 'text-bg-danger' : 'text-bg-secondary');
+
+    // I PDF non possono passare dalle operazioni sincrone: cambia il nome
+    // dell'operazione, non le feature richieste.
+    document.getElementById('api-scelta').textContent = perPdf
+      ? (usaAnalyze ? 'StartDocumentAnalysis' : 'StartDocumentTextDetection')
+      : (usaAnalyze ? 'AnalyzeDocument' : 'DetectDocumentText');
+
+    const badgeModalita = document.getElementById('modalita-scelta');
+    badgeModalita.textContent = perPdf ? 'asincrona (PDF)' : 'sincrona';
+    badgeModalita.className = 'badge ' + (perPdf ? 'text-bg-warning text-dark' : 'text-bg-secondary');
+
+    document.getElementById('feature-scelte').textContent =
+      usaAnalyze ? 'FeatureTypes: ' + featuresFinali.join(', ') : 'solo estrazione del testo';
+    document.getElementById('nota-pagine').classList.toggle('d-none', !perPdf);
+
+    btnCarica.disabled = !inputFile.files.length || elencoQuery.length > MAX_QUERIES;
+    return { queries: elencoQuery, features: featuresFinali };
+  }
+
+  function occupato(attivo) {
+    spinner.classList.toggle('d-none', !attivo);
+    btnCarica.disabled = attivo || !inputFile.files.length;
+  }
+
+  inputFile.addEventListener('change', () => {
+    messaggio.innerHTML = '';
+    const file = inputFile.files[0];
+    if (!file) {
+      anteprimaBox.classList.add('d-none');
+      aggiornaRiepilogo();
+      return;
+    }
+    const pdf = fileSelezionatoEPdf();
+
+    // Un PDF non si puo' mostrare in un tag <img>: si usa un segnaposto
+    anteprima.classList.toggle('d-none', pdf);
+    anteprimaPdf.classList.toggle('d-none', !pdf);
+    if (!pdf) { anteprima.src = URL.createObjectURL(file); }
+
+    dettaglioFile.textContent =
+      file.name + ' - ' + (file.size / 1024).toFixed(1) + ' KB - ' + (file.type || 'tipo sconosciuto');
+    anteprimaBox.classList.remove('d-none');
+
+    const limite = limiteMb();
+    if (file.size > limite * 1024 * 1024) {
+      mostraMessaggio('warning',
+        'Il file pesa ' + (file.size / 1024 / 1024).toFixed(1) + ' MB: il limite per ' +
+        (pdf ? 'i PDF' : 'le immagini') + ' e\' ' + limite + ' MB.');
+    }
+    aggiornaRiepilogo();
+  });
+
+  queries.addEventListener('input', aggiornaRiepilogo);
+  document.querySelectorAll('.feature').forEach(c => c.addEventListener('change', aggiornaRiepilogo));
+  sliderConfidence.addEventListener('input', () => {
+    document.getElementById('valore-confidence').textContent = sliderConfidence.value;
+  });
+
+  btnCarica.addEventListener('click', async () => {
+    const file = inputFile.files[0];
+    if (!file) { return; }
+
+    const scelte = aggiornaRiepilogo();
+
+    const limite = limiteMb();
+    if (file.size > limite * 1024 * 1024) {
+      mostraMessaggio('danger', 'File troppo grande: il limite e\' ' + limite + ' MB.');
+      return;
+    }
+    if (scelte.features.includes('QUERIES') && scelte.queries.length === 0) {
+      mostraMessaggio('danger', 'La feature QUERIES richiede almeno una domanda.');
+      return;
+    }
+
+    occupato(true);
+    mostraMessaggio('info', 'Richiesta del presigned URL in corso...');
+
+    try {
+      // 1) la lambda presigned_url valida le opzioni, le salva sotto jobs/
+      //    e restituisce un URL firmato per la PUT su S3
+      const rispostaUrl = await fetch(cfg.apiBaseUrl + '/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          content_type: file.type || (fileSelezionatoEPdf() ? 'application/pdf' : 'image/jpeg'),
+          size_bytes: file.size,
+          feature_types: scelte.features,
+          queries: scelte.queries,
+          min_confidence: Number(sliderConfidence.value),
+          salva_blocchi_grezzi: document.getElementById('blocchi-grezzi').checked,
+          nota: document.getElementById('nota').value
+        })
+      });
+
+      const datiUrl = await rispostaUrl.json();
+      if (!rispostaUrl.ok) {
+        throw new Error(datiUrl.error || 'Errore nella generazione del presigned URL');
+      }
+
+      // 2) upload diretto verso S3: il file non passa da API Gateway
+      mostraMessaggio('info', 'Caricamento del file su S3 in corso...');
+      const rispostaPut = await fetch(datiUrl.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': datiUrl.content_type },
+        body: file
+      });
+
+      if (!rispostaPut.ok) {
+        throw new Error('S3 ha risposto ' + rispostaPut.status + ' durante l\'upload');
+      }
+
+      // 3) da qui in poi e' tutto asincrono: la Lambda parte da sola sull'evento S3
+      const attesa = datiUrl.modalita === 'asincrona'
+        ? 'Il PDF viene analizzato con un job asincrono di Textract: a seconda del numero di ' +
+          'pagine possono servire da qualche decina di secondi a diversi minuti. Nella lista ' +
+          'comparira\' prima come <strong>IN ELABORAZIONE</strong>.'
+        : 'L\'analisi richiede qualche secondo.';
+
+      mostraMessaggio('success',
+        'Documento caricato come <code>' + escapeHtml(datiUrl.key) + '</code>.<br>' +
+        'Textract verra\' chiamato con <strong>' + escapeHtml(datiUrl.textract_api) + '</strong>' +
+        (datiUrl.opzioni.feature_types.length
+          ? ' (' + escapeHtml(datiUrl.opzioni.feature_types.join(', ')) + ')' : '') + '.<br>' +
+        attesa + '<br>' +
+        '<a href="lista.html" class="alert-link">Vai ai documenti analizzati</a>.');
+
+      inputFile.value = '';
+      anteprimaBox.classList.add('d-none');
+    } catch (errore) {
+      mostraMessaggio('danger', 'Errore: ' + escapeHtml(errore.message));
+    } finally {
+      occupato(false);
+    }
+  });
+
+  aggiornaRiepilogo();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
