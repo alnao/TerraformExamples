@@ -1,0 +1,26 @@
+region       = "eu-central-1"
+project_name = "alnao-dev-terraform-esempio19"
+
+# I tag che ogni risorsa deve avere (massimo sei, limite della regola nativa)
+required_tag_keys = ["project", "cost", "environment", "createdWith", "createdBy"]
+
+# Valori ammessi per alcuni tag; i tag non elencati accettano qualsiasi valore
+allowed_tag_values = {
+  environment = ["dev", "test", "prod"]
+  createdWith = ["terraform", "console", "cli"]
+}
+
+# ⚠️ AWS ammette un solo configuration recorder per regione:
+# se nell'account e' gia' attivo mettere false
+create_config_recorder = true
+record_all_resources   = false
+
+# Email che riceve le notifiche delle risorse non conformi
+notification_email = "nome.cognome@example.com"
+
+# Due bucket di prova, uno conforme e uno no
+create_demo_resources = true
+
+# Cruscotto web
+stage_name          = "dev"
+cors_allowed_origin = "*"

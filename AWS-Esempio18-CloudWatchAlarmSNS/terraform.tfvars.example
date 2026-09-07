@@ -1,0 +1,33 @@
+region       = "eu-central-1"
+project_name = "alnao-dev-terraform-esempio18"
+
+# Email che riceve le notifiche dell'allarme (va confermata dalla mail di SNS)
+notification_email = "nome.cognome@example.com"
+
+# Codice HTTP monitorato: 403 come da esempio, 401 per un sito con autenticazione
+monitored_status_code = 403
+
+# Soglia e finestra dell'allarme
+alarm_threshold          = 1
+alarm_period_seconds     = 60
+alarm_evaluation_periods = 1
+
+# Rete: se lasciati vuoti si usano VPC di default e la sua prima subnet
+# vpc_id    = "vpc-xxxxxxxx"
+# subnet_id = "subnet-xxxxxxxx"
+
+# Allarmi aggiuntivi
+enable_error_rate_alarm = true
+error_rate_threshold    = 20
+enable_anomaly_alarm    = true
+
+# Credenziali dell'area /privata (demo 401 vs 403)
+basic_auth_user              = "alnao"
+basic_auth_password          = "esempio18"
+basic_auth_user_bloccato     = "ospite"
+basic_auth_password_bloccato = "ospite18"
+#se cambiati qua bisogna cambiare anche il traffico.sh perchè usa l'ospite
+
+# Storico allarmi
+ttl_days   = 30
+stage_name = "dev"
