@@ -11,8 +11,8 @@
 
   <h1 class="h3 mb-1">Config Tag Scanner</h1>
   <p class="text-muted mb-4">
-    Stato di conformita' ai tag obbligatori, letto da AWS Config
-    (regola <code id="nome-regola">-</code>).
+    Stato di conformita' ai tag obbligatori, letto dall'aggregator di AWS Config
+(regole <code id="nome-regola">-</code>, regioni <span id="nome-regioni">-</span>).
   </p>
 
   <!-- Riepilogo -->
@@ -44,6 +44,9 @@
     </div>
   </div>
 
+  <!-- Riepilogo per regione -->
+  <div class="d-flex flex-wrap gap-2 mb-4" id="per-regione"></div>
+
   <!-- Filtri -->
   <div class="row g-2 align-items-end mb-3">
     <div class="col-sm-3">
@@ -54,15 +57,19 @@
         <option value="COMPLIANT">solo conformi</option>
       </select>
     </div>
+    <div class="col-sm-2">
+      <label class="form-label" for="filtro-regione">Regione</label>
+      <select id="filtro-regione" class="form-select"><option value="">tutte</option></select>
+    </div>
     <div class="col-sm-3">
       <label class="form-label" for="filtro-tipo">Tipo di risorsa</label>
       <select id="filtro-tipo" class="form-select"><option value="">tutti</option></select>
     </div>
-    <div class="col-sm-3">
+    <div class="col-sm-2">
       <label class="form-label" for="filtro-testo">Cerca nel nome</label>
       <input id="filtro-testo" class="form-control" placeholder="parte del nome">
     </div>
-    <div class="col-sm-3">
+    <div class="col-sm-2">
       <button id="aggiorna" class="btn btn-primary w-100">Aggiorna</button>
     </div>
   </div>
@@ -73,7 +80,7 @@
     <table class="table table-sm table-hover align-middle bg-white">
       <thead>
         <tr>
-          <th>Stato</th><th>Tipo</th><th>Risorsa</th><th>Problema</th><th>Tag presenti</th>
+          <th>Stato</th><th>Regione</th><th>Tipo</th><th>Risorsa</th><th>Problema</th><th>Tag presenti</th>
         </tr>
       </thead>
       <tbody id="righe"></tbody>
@@ -82,7 +89,8 @@
 
   <p class="text-muted small">
     La pagina legge <code id="endpoint">-</code>. Se l'elenco e' vuoto, AWS Config
-    non ha ancora valutato le risorse: la prima valutazione richiede qualche minuto.
+    non ha ancora valutato le risorse: la prima valutazione richiede qualche minuto,
+    e l'aggregator ci mette qualche minuto in piu' a copiare i risultati dalle regioni.
   </p>
 </div>
 
@@ -101,7 +109,8 @@
       const dati = await risposta.json();
 
       RISORSE = dati.risorse || [];
-      document.getElementById("nome-regola").textContent = dati.regola || "-";
+      document.getElementById("nome-regola").textContent = (dati.regole || []).join(", ") || "-";
+      document.getElementById("nome-regioni").textContent = (dati.regioni || []).join(", ") || "-";
       document.getElementById("conteggio-ok").textContent = dati.conformi;
       document.getElementById("conteggio-ko").textContent = dati.non_conformi;
       document.getElementById("conteggio-tot").textContent = dati.totale;
@@ -109,6 +118,8 @@
         "Tag richiesti: " + (dati.tag_richiesti || []).join(", ");
 
       riempiTipi();
+      riempiRegioni(dati.regioni || []);
+      disegnaPerRegione(dati.per_regione || {});
       disegna();
 
       if (RISORSE.length === 0) {
@@ -133,8 +144,39 @@
     select.value = scelto;
   }
 
+  function riempiRegioni(regioni) {
+    const select = document.getElementById("filtro-regione");
+    const scelto = select.value;
+    const tutte = [...new Set([...regioni, ...RISORSE.map(r => r.awsRegion)])].filter(Boolean).sort();
+    select.innerHTML = "<option value=''>tutte</option>" +
+      tutte.map(r => "<option>" + esc(r) + "</option>").join("");
+    select.value = scelto;
+  }
+
+  // Una card piccola per regione: cliccandola si filtra la tabella
+  function disegnaPerRegione(perRegione) {
+    const contenitore = document.getElementById("per-regione");
+    contenitore.innerHTML = "";
+    for (const regione of Object.keys(perRegione).sort()) {
+      const v = perRegione[regione];
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "btn btn-outline-secondary btn-sm text-start";
+      card.innerHTML = "<strong>" + esc(regione) + "</strong><br>" +
+        "<span class='text-success'>" + v.conformi + " ok</span> &middot; " +
+        "<span class='text-danger'>" + v.non_conformi + " ko</span>";
+      card.addEventListener("click", () => {
+        const select = document.getElementById("filtro-regione");
+        select.value = select.value === regione ? "" : regione;
+        disegna();
+      });
+      contenitore.appendChild(card);
+    }
+  }
+
   function disegna() {
     const filtroStato = document.getElementById("filtro-stato").value;
+    const filtroRegione = document.getElementById("filtro-regione").value;
     const filtroTipo = document.getElementById("filtro-tipo").value;
     const filtroTesto = document.getElementById("filtro-testo").value.toLowerCase();
     const righe = document.getElementById("righe");
@@ -142,6 +184,7 @@
 
     const visibili = RISORSE.filter(r =>
       (!filtroStato || r.compliance === filtroStato) &&
+      (!filtroRegione || r.awsRegion === filtroRegione) &&
       (!filtroTipo || r.resourceType === filtroTipo) &&
       (!filtroTesto || String(r.resourceId).toLowerCase().includes(filtroTesto))
     );
@@ -151,7 +194,8 @@
       const tr = document.createElement("tr");
       tr.innerHTML =
         "<td><span class='badge text-bg-" + (conforme ? "success'>conforme" : "danger'>non conforme") + "</span></td>" +
-        "<td class='small'>" + esc(r.resourceType.replace("AWS::", "")) + "</td>" +
+        "<td class='small'>" + esc(r.awsRegion) + "</td>" +
+        "<td class='small' title='regola: " + esc(r.regola) + "'>" + esc(r.resourceType.replace("AWS::", "")) + "</td>" +
         "<td class='small'>" + esc(r.resourceId) + "</td>" +
         "<td>" + problema(r) + "</td>" +
         "<td>" + tagPresenti(r.tags) + "</td>";
@@ -159,7 +203,7 @@
     }
 
     if (visibili.length === 0) {
-      righe.innerHTML = "<tr><td colspan='5' class='text-muted text-center py-3'>Nessuna risorsa con questi filtri.</td></tr>";
+      righe.innerHTML = "<tr><td colspan='6' class='text-muted text-center py-3'>Nessuna risorsa con questi filtri.</td></tr>";
     }
   }
 
@@ -189,7 +233,7 @@
   }
 
   document.getElementById("aggiorna").addEventListener("click", carica);
-  for (const id of ["filtro-stato", "filtro-tipo", "filtro-testo"]) {
+  for (const id of ["filtro-stato", "filtro-regione", "filtro-tipo", "filtro-testo"]) {
     document.getElementById(id).addEventListener("input", disegna);
   }
 

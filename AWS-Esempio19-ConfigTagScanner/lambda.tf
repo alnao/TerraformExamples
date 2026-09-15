@@ -37,8 +37,9 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Sola lettura su Config: la valutazione della regola e i tag delle risorse.
-# SelectResourceConfig non accetta restrizioni per risorsa, il Resource e' "*".
+# Sola lettura sull'AGGREGATOR: valutazioni e tag di tutte le regioni con le
+# API *Aggregate*. Le Select* non accettano restrizioni per risorsa, il
+# Resource e' "*".
 resource "aws_iam_role_policy" "lambda_config" {
   name = "config-read"
   role = aws_iam_role.lambda.id
@@ -48,10 +49,10 @@ resource "aws_iam_role_policy" "lambda_config" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "config:GetComplianceDetailsByConfigRule",
-        "config:DescribeConfigRules",
-        "config:DescribeComplianceByConfigRule",
-        "config:SelectResourceConfig",
+        "config:DescribeConfigurationAggregators",
+        "config:DescribeAggregateComplianceByConfigRules",
+        "config:GetAggregateComplianceDetailsByConfigRule",
+        "config:SelectAggregateResourceConfig",
       ]
       Resource = "*"
     }]
@@ -76,10 +77,13 @@ resource "aws_lambda_function" "list_compliance" {
 
   environment {
     variables = {
-      RULE_NAME      = aws_config_config_rule.required_tags.name
-      REQUIRED_TAGS  = join(",", local.tag_keys)
-      ALLOWED_VALUES = jsonencode(var.allowed_tag_values)
-      CORS_ORIGIN    = var.cors_allowed_origin
+      AGGREGATOR_NAME = aws_config_configuration_aggregator.main.name
+      ACCOUNT_ID      = data.aws_caller_identity.current.account_id
+      REGIONS         = join(",", var.regions)
+      RULE_NAMES      = join(",", local.rule_names)
+      REQUIRED_TAGS   = join(",", local.tag_keys)
+      ALLOWED_VALUES  = jsonencode(var.allowed_tag_values)
+      CORS_ORIGIN     = var.cors_allowed_origin
     }
   }
 

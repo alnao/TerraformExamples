@@ -60,7 +60,8 @@ resource "aws_s3_object" "index_html" {
 locals {
   website_config_js = templatefile("${path.module}/website/config.js.tpl", {
     api_base_url = aws_api_gateway_stage.main.invoke_url
-    rule_name    = aws_config_config_rule.required_tags.name
+    rule_names   = jsonencode(local.rule_names)
+    regions      = jsonencode(var.regions)
   })
 }
 

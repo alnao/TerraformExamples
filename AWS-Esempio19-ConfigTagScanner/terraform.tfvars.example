@@ -1,26 +1,55 @@
-region       = "eu-central-1"
-project_name = "alnao-dev-terraform-esempio19"
+# Regione centrale: bucket di consegna, aggregator, SNS, Lambda, API e sito
+home_region  = "us-west-2"
+project_name = "alnao-terraform-esempio19"
+
+# Regioni controllate: Oregon, Irlanda, Francoforte, Ohio, N. Virginia.
+# Sono le uniche ammesse (ognuna ha il suo provider in main.tf): per usarne
+# meno basta togliere dalla lista, home_region deve restare fra queste.
+regions = ["us-west-2", "eu-west-1", "eu-central-1", "us-east-2", "us-east-1"]
+
+# Tag applicati a ogni risorsa creata dall'esempio: sono gia' quelli che la
+# regola richiede, con valori ammessi, quindi le risorse risultano COMPLIANT
+tags = {
+  project     = "alnao-terraform-esempio19"
+  cost        = "tagScanner"
+  environment = "prod"
+  createdWith = "terraform"
+  createdBy   = "alnao"
+}
 
 # I tag che ogni risorsa deve avere (massimo sei, limite della regola nativa)
 required_tag_keys = ["project", "cost", "environment", "createdWith", "createdBy"]
 
 # Valori ammessi per alcuni tag; i tag non elencati accettano qualsiasi valore
 allowed_tag_values = {
-  environment = ["dev", "test", "prod"]
+  environment = ["dev", "test", "prod" , "monitoring"]
   createdWith = ["terraform", "console", "cli"]
 }
 
 # ⚠️ AWS ammette un solo configuration recorder per regione:
-# se nell'account e' gia' attivo mettere false
-create_config_recorder = true
-record_all_resources   = false
+# elencare qui le regioni in cui e' gia' attivo (li' si crea solo la regola)
+regions_with_existing_recorder = []
 
-# Email che riceve le notifiche delle risorse non conformi
+# false = il recorder registra solo i tipi che le due regole valutano (costa meno)
+# true  = tutti i tipi che Config supporta, tranne excluded_resource_types
+record_all_resources = false
+
+# Regola custom Guard per i tipi che REQUIRED_TAGS non copre (Lambda, SNS,
+# SQS, API Gateway, ECS, EKS, KMS...): la lista e' in custom_rule_resource_types
+enable_custom_rule = true
+
+# La regola Guard accetta le chiavi anche come Project / PROJECT.
+# La nativa REQUIRED_TAGS non puo': custom_rule_only = true la sostituisce
+# con la Guard anche sui suoi 30 tipi, cosi' la tolleranza vale ovunque
+tag_keys_case_insensitive = true
+custom_rule_only          = false
+
+# Email che riceve le notifiche delle risorse non conformi, da tutte le regioni
 notification_email = "nome.cognome@example.com"
 
-# Due bucket di prova, uno conforme e uno no
+# Due bucket di prova per regione, uno conforme e uno no
 create_demo_resources = true
 
 # Cruscotto web
-stage_name          = "dev"
+stage_name          = "monitoring"
 cors_allowed_origin = "*"

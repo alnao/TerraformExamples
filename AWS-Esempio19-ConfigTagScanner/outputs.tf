@@ -1,11 +1,46 @@
-output "config_rule_name" {
-  description = "Nome della regola AWS Config che verifica i tag"
-  value       = aws_config_config_rule.required_tags.name
+output "regions" {
+  description = "Regioni in cui sono attivi recorder e regola"
+  value       = var.regions
 }
 
-output "config_rule_arn" {
-  description = "ARN della regola"
-  value       = aws_config_config_rule.required_tags.arn
+output "home_region" {
+  description = "Regione centrale: aggregator, SNS, Lambda, API e sito"
+  value       = var.home_region
+}
+
+output "config_rule_name" {
+  description = "Nome della regola nativa REQUIRED_TAGS (uguale in tutte le regioni; null con custom_rule_only)"
+  value       = local.enable_native_rule ? local.rule_name : null
+}
+
+output "custom_rule_name" {
+  description = "Nome della regola custom Guard (null se disattivata)"
+  value       = local.enable_custom_rule ? local.custom_rule_name : null
+}
+
+output "config_rule_names" {
+  description = "Tutte le regole che verificano i tag: le legge scansione.sh"
+  value       = local.rule_names
+}
+
+output "config_rule_arns" {
+  description = "ARN della regola nativa, per regione"
+  value       = { for r, m in local.region_modules : r => m.rule_arn }
+}
+
+output "custom_rule_arns" {
+  description = "ARN della regola custom, per regione"
+  value       = { for r, m in local.region_modules : r => m.custom_rule_arn }
+}
+
+output "custom_rule_policy" {
+  description = "Policy Guard generata per la regola custom"
+  value       = local.enable_custom_rule ? local.custom_rule_policy : null
+}
+
+output "aggregator_name" {
+  description = "Configuration aggregator che riunisce le valutazioni di tutte le regioni"
+  value       = aws_config_configuration_aggregator.main.name
 }
 
 output "required_tag_keys" {
@@ -19,7 +54,7 @@ output "rule_parameters" {
 }
 
 output "config_bucket_name" {
-  description = "Bucket dove AWS Config consegna snapshot e cronologia"
+  description = "Bucket unico dove AWS Config di tutte le regioni consegna snapshot e cronologia"
   value       = aws_s3_bucket.config.id
 }
 
@@ -28,23 +63,28 @@ output "sns_topic_arn" {
   value       = aws_sns_topic.non_compliant.arn
 }
 
-output "demo_bucket_compliant" {
-  description = "Bucket di prova con tutti i tag richiesti"
-  value       = var.create_demo_resources ? aws_s3_bucket.demo_ok[0].id : null
+output "demo_buckets_compliant" {
+  description = "Bucket di prova con tutti i tag richiesti, per regione"
+  value       = { for r, m in local.region_modules : r => m.demo_bucket_compliant }
 }
 
-output "demo_bucket_non_compliant" {
-  description = "Bucket di prova a cui mancano dei tag"
-  value       = var.create_demo_resources ? aws_s3_bucket.demo_ko[0].id : null
+output "demo_buckets_non_compliant" {
+  description = "Bucket di prova a cui mancano dei tag, per regione"
+  value       = { for r, m in local.region_modules : r => m.demo_bucket_non_compliant }
 }
 
-output "console_url" {
-  description = "Pagina della regola nella console AWS Config"
-  value       = "https://${var.region}.console.aws.amazon.com/config/home?region=${var.region}#/rules/details?configRuleName=${aws_config_config_rule.required_tags.name}"
+output "console_urls" {
+  description = "Pagina della regola nella console AWS Config, per regione"
+  value       = { for r, m in local.region_modules : r => m.console_url }
+}
+
+output "aggregator_console_url" {
+  description = "Vista aggregata di tutte le regioni nella console AWS Config"
+  value       = "https://${var.home_region}.console.aws.amazon.com/config/home?region=${var.home_region}#/aggregators/details?aggregatorName=${aws_config_configuration_aggregator.main.name}"
 }
 
 output "comando_scansione" {
-  description = "Script che elenca le risorse non conformi"
+  description = "Script che elenca le risorse non conformi di tutte le regioni"
   value       = "./scansione.sh -t"
 }
 
