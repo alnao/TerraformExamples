@@ -296,17 +296,17 @@ variable "create_demo_resources" {
 }
 
 variable "tags" {
-  description = "Tag applicati alle risorse dell'esempio"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    project     = "alnao-terraform-esempio19"
-    cost        = "tagScanner"
-    environment = "prod"
-    createdWith = "terraform"
-    createdBy   = "alnao"
+    Name        = "aws-esempio19.config-tag-scanner"
+    Environment = "dev"
+    Project     = "Development.aws.terraform19-ConfigTagScanner"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }
-
 # ====================================
 # CRUSCOTTO WEB: LAMBDA, API, SITO S3
 # ====================================

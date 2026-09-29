@@ -24,10 +24,10 @@ locals {
     var.tags,
     var.additional_tags,
     {
-      Project = var.project_name
+      Project = lookup(var.tags, "Project", "Development.aws.terraform11-LambdaApplicationS3Utils")
     }
   )
-  
+
   dynamodb_scan_table_name = "${var.project_name}-${var.dynamodb_scan_suffix}"
 }
 

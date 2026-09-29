@@ -121,10 +121,12 @@ variable "create_eip" {
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
-  default     = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio02IstanzaEC2"
-    CreatedBy   = "Terraform"
+  default = {
+    Name        = "aws-esempio02.ec2"
+    Environment = "dev"
+    Project     = "Development.aws.terraform02-IstanzaEC2"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -156,12 +156,12 @@ resource "azurerm_linux_function_app" "main" {
 
   app_settings = merge(
     {
-      FUNCTIONS_WORKER_RUNTIME       = "python"
-      FUNCTIONS_EXTENSION_VERSION    = "~4"
-      AzureWebJobsStorage            = azurerm_storage_account.function.primary_connection_string
-      SOURCE_STORAGE_CONNECTION      = azurerm_storage_account.source.primary_connection_string
-      SOURCE_STORAGE_ACCOUNT_NAME    = azurerm_storage_account.source.name
-      SOURCE_CONTAINER_NAME          = azurerm_storage_container.source.name
+      FUNCTIONS_WORKER_RUNTIME    = "python"
+      FUNCTIONS_EXTENSION_VERSION = "~4"
+      AzureWebJobsStorage         = azurerm_storage_account.function.primary_connection_string
+      SOURCE_STORAGE_CONNECTION   = azurerm_storage_account.source.primary_connection_string
+      SOURCE_STORAGE_ACCOUNT_NAME = azurerm_storage_account.source.name
+      SOURCE_CONTAINER_NAME       = azurerm_storage_container.source.name
     },
     var.app_settings
   )
@@ -181,7 +181,7 @@ resource "time_sleep" "wait_for_function" {
     # Run when the function app ID changes (e.g. app settings update)
     function_app_id = azurerm_linux_function_app.main.id
     # Run when the package changes
-    package_md5    = data.archive_file.function_package.output_md5
+    package_md5 = data.archive_file.function_package.output_md5
   }
 }
 

@@ -24,9 +24,9 @@ cors_allowed_origins = ["*"]
 force_destroy      = true
 log_retention_days = 7
 
-tags = {
-  Environment = "Dev"
-  Owner       = "alnao"
-  Example     = "Esempio16RekognitionImageDetector"
-  CreatedBy   = "Terraform"
-}
+# tags = {
+#   Environment = "Dev"
+#   Owner       = "alnao"
+#   Example     = "Esempio16RekognitionImageDetector"
+#   CreatedBy   = "Terraform"
+# }

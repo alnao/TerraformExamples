@@ -107,14 +107,17 @@ variable "notification_email" {
 }
 
 variable "tags" {
-  description = "Tag applicati a tutte le risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
+    Name        = "aws-esempio18.cloudwatch-alarm-sns"
     Environment = "dev"
-    ManagedBy   = "terraform"
+    Project     = "Development.aws.terraform18-CloudWatchAlarmSNS"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }
-
 # ====================================
 # ALLARMI AGGIUNTIVI
 # ====================================

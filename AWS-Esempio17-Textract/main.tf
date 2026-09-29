@@ -19,7 +19,7 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      Project = var.project_name
+      Project = lookup(var.tags, "Project", "Development.aws.terraform17-Textract")
     }
   )
 

@@ -107,12 +107,14 @@ variable "lambda_layer_arns_excel2csv" {
 }
 
 variable "tags" {
-  description = "Tag risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio12GlueJob"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio12.glue-job"
+    Environment = "dev"
+    Project     = "Development.aws.terraform12-GlueJob"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

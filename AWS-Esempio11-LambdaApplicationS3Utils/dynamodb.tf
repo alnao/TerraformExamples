@@ -4,10 +4,10 @@
 
 # Tabella Logs
 resource "aws_dynamodb_table" "logs" {
-  name           = var.dynamodb_logs_table_name
-  billing_mode   = var.dynamodb_billing_mode
-  hash_key       = "id"
-  range_key      = "timestamp"
+  name         = var.dynamodb_logs_table_name
+  billing_mode = var.dynamodb_billing_mode
+  hash_key     = "id"
+  range_key    = "timestamp"
 
   attribute {
     name = "id"

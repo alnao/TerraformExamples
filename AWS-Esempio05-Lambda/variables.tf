@@ -213,12 +213,14 @@ variable "alarm_actions" {
 
 # Tags
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio05Lambda"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio05.lambda"
+    Environment = "dev"
+    Project     = "Development.aws.terraform05-Lambda"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -59,10 +59,14 @@ variable "throttle_rate_limit" {
 }
 
 variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio08ApiGateway"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio08.api-gateway"
+    Environment = "dev"
+    Project     = "Development.aws.terraform08-ApiGateway"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

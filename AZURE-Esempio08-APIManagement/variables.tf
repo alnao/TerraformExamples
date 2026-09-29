@@ -40,10 +40,14 @@ variable "subscription_required" {
 }
 
 variable "tags" {
+  description = "Tag da applicare alle risorse"
+  type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio08APIManagement"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio08.api-management"
+    Environment = "dev"
+    Project     = "Development.azure.terraform08-APIManagement"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

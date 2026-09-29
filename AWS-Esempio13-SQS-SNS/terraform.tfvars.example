@@ -16,9 +16,9 @@ notification_email = "your-email@example.com"
 # sns_topic_name       = "alnao-dev-terraform-es13-topic"
 
 # Tags da applicare alle risorse
-tags = {
-  Environment = "Dev"
-  Owner       = "alnao"
-  Example     = "Esempio13SQSSNS"
-  CreatedBy   = "Terraform"
-}
+# tags = {
+#   Environment = "Dev"
+#   Owner       = "alnao"
+#   Example     = "Esempio13SQSSNS"
+#   CreatedBy   = "Terraform"
+# }

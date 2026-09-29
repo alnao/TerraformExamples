@@ -28,8 +28,8 @@ resource "azurerm_storage_account" "files" {
 }
 
 resource "azurerm_storage_container" "files" {
-  name                  = "files"
-  storage_account_name  = azurerm_storage_account.files.name
+  name                 = "files"
+  storage_account_name = azurerm_storage_account.files.name
 }
 
 # Storage per Functions
@@ -89,14 +89,14 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   app_settings = {
-    FUNCTIONS_WORKER_RUNTIME           = "python"
-    FUNCTIONS_EXTENSION_VERSION         = "~4"
-    AzureWebJobsFeatureFlags            = "EnableWorkerIndexing"
-    SCM_DO_BUILD_DURING_DEPLOYMENT      = "true"
-    ENABLE_ORYX_BUILD                   = "true"
-    FILES_STORAGE_CONNECTION            = azurerm_storage_account.files.primary_connection_string
-    FILES_STORAGE_ACCOUNT_NAME          = azurerm_storage_account.files.name
-    FILES_CONTAINER_NAME                = azurerm_storage_container.files.name
+    FUNCTIONS_WORKER_RUNTIME       = "python"
+    FUNCTIONS_EXTENSION_VERSION    = "~4"
+    AzureWebJobsFeatureFlags       = "EnableWorkerIndexing"
+    SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
+    ENABLE_ORYX_BUILD              = "true"
+    FILES_STORAGE_CONNECTION       = azurerm_storage_account.files.primary_connection_string
+    FILES_STORAGE_ACCOUNT_NAME     = azurerm_storage_account.files.name
+    FILES_CONTAINER_NAME           = azurerm_storage_container.files.name
   }
 
   identity {
@@ -176,11 +176,11 @@ resource "azurerm_api_management_api_operation" "post_calculate" {
 
   request {
     description = "Request body con cateto_a e cateto_b"
-    
+
     representation {
       content_type = "application/json"
       example {
-        name  = "default"
+        name = "default"
         value = jsonencode({
           cateto_a = 3
           cateto_b = 4

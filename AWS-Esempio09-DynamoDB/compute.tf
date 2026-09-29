@@ -90,12 +90,12 @@ resource "aws_lambda_function" "s3_to_dynamodb" {
   count            = var.enable_s3_lambda_integration ? 1 : 0
   filename         = data.archive_file.lambda_s3_dynamodb_zip[0].output_path
   function_name    = "${var.table_name}-s3-to-dynamodb"
-  role            = aws_iam_role.lambda_role[0].arn
-  handler         = "lambda_s3_to_dynamodb.lambda_handler"
+  role             = aws_iam_role.lambda_role[0].arn
+  handler          = "lambda_s3_to_dynamodb.lambda_handler"
   source_code_hash = data.archive_file.lambda_s3_dynamodb_zip[0].output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 60
-  memory_size     = 256
+  runtime          = "python3.11"
+  timeout          = 60
+  memory_size      = 256
 
   environment {
     variables = {

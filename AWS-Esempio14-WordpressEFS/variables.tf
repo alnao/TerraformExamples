@@ -60,12 +60,14 @@ variable "db_allocated_storage" {
 }
 
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio14WordpressEFS"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio14.wordpress-efs"
+    Environment = "dev"
+    Project     = "Development.aws.terraform14-WordpressEFS"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

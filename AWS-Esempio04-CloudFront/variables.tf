@@ -296,9 +296,11 @@ variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio04CloudFront"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio04.cloudfront"
+    Environment = "dev"
+    Project     = "Development.aws.terraform04-CloudFront"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

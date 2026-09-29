@@ -214,9 +214,11 @@ variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio09DynamoDB"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio09.dynamodb"
+    Environment = "dev"
+    Project     = "Development.aws.terraform09-DynamoDB"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -138,12 +138,14 @@ variable "temporary_duration_hours" {
 }
 
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio15WordpressScaling"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio15.wordpress-scaling"
+    Environment = "dev"
+    Project     = "Development.aws.terraform15-WordpressScaling"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

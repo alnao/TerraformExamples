@@ -14,7 +14,7 @@ provider "aws" {
 resource "aws_s3_bucket" "example" {
   bucket        = var.bucket_name
   force_destroy = var.force_destroy
-  tags = var.tags
+  tags          = var.tags
 }
 
 resource "aws_s3_bucket_versioning" "this" {

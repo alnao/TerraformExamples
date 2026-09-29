@@ -176,12 +176,14 @@ variable "alarm_actions" {
 
 # Tags
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio06EventBridge"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio06.eventbridge"
+    Environment = "dev"
+    Project     = "Development.aws.terraform06-EventBridge"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

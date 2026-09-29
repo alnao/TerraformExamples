@@ -67,9 +67,9 @@ output "connection_string" {
 output "connection_details" {
   description = "Dettagli di connessione"
   value = {
-    endpoint  = aws_rds_cluster.main.endpoint
-    port      = aws_rds_cluster.main.port
-    database  = aws_rds_cluster.main.database_name
-    username  = aws_rds_cluster.main.master_username
+    endpoint = aws_rds_cluster.main.endpoint
+    port     = aws_rds_cluster.main.port
+    database = aws_rds_cluster.main.database_name
+    username = aws_rds_cluster.main.master_username
   }
 }

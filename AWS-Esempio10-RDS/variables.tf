@@ -186,12 +186,14 @@ variable "alarm_actions" {
 }
 
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio10RDS"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio10.rds"
+    Environment = "dev"
+    Project     = "Development.aws.terraform10-RDS"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -27,10 +27,14 @@ variable "function_app_name" {
 }
 
 variable "tags" {
+  description = "Tag da applicare alle risorse"
+  type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio07LogicApps"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio07.logic-apps"
+    Environment = "dev"
+    Project     = "Development.azure.terraform07-LogicApps"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

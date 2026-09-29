@@ -3,9 +3,9 @@
 # ====================================
 
 resource "random_password" "rds_password" {
-  count   = var.create_rds ? 1 : 0
-  length  = 16
-  special = true
+  count            = var.create_rds ? 1 : 0
+  length           = 16
+  special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
@@ -59,7 +59,7 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id       = data.aws_vpc.default.id
   service_name = "com.amazonaws.${var.region}.s3"
 
-  tags = merge(local.common_tags, { Name = "${var.project_name}-s3-endpoint" })
+  tags = merge(local.common_tags, { Name = "aws-esempio11.s3-endpoint" })
 }
 
 # Associa il S3 endpoint alle route tables delle subnet
@@ -81,7 +81,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id       = data.aws_vpc.default.id
   service_name = "com.amazonaws.${var.region}.dynamodb"
 
-  tags = merge(local.common_tags, { Name = "${var.project_name}-dynamodb-endpoint" })
+  tags = merge(local.common_tags, { Name = "aws-esempio11.dynamodb-endpoint" })
 }
 
 resource "aws_vpc_endpoint_route_table_association" "dynamodb" {

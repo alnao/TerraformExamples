@@ -8,12 +8,12 @@ variable "location" {
   description = "Azure region"
   type        = string
   default     = "westeurope"
-# default     = "francecentral"   # Francia centrale
-# default     = "germanywestcentral" # Germania ovest
-# default     = "uksouth"         # UK sud
-# default     = "switzerlandnorth" # Svizzera nord
-# default     = "eastus"          # USA est
-# default     = "westeurope"      # Olanda (originale)
+  # default     = "francecentral"   # Francia centrale
+  # default     = "germanywestcentral" # Germania ovest
+  # default     = "uksouth"         # UK sud
+  # default     = "switzerlandnorth" # Svizzera nord
+  # default     = "eastus"          # USA est
+  # default     = "westeurope"      # Olanda (originale)
 }
 
 # Storage Accounts
@@ -155,12 +155,14 @@ variable "action_group_id" {
 
 # Tags
 variable "tags" {
-  description = "Tags da applicare alle risorse"
+  description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio05Functions"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio05.functions"
+    Environment = "dev"
+    Project     = "Development.azure.terraform05-Functions"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

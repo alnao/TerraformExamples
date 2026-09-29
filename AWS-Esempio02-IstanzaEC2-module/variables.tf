@@ -134,11 +134,14 @@ variable "additional_ebs_volumes" {
 }
 
 variable "tags" {
-  description = "Tags to apply to all resources"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Development"
-    Project     = "TerraformExamples"
-    Example     = "AWS-Esempio02-IstanzaEC2-module"
+    Name        = "aws-esempio02.module-ec2"
+    Environment = "dev"
+    Project     = "Development.aws.terraform02-IstanzaEC2-module"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

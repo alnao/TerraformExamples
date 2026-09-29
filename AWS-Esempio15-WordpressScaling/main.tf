@@ -20,7 +20,7 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      Project = var.project_name
+      Project = lookup(var.tags, "Project", "Development.aws.terraform15-WordpressScaling")
     }
   )
 
@@ -84,7 +84,7 @@ resource "aws_security_group" "alb" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-alb-sg"
+      Name = "aws-esempio15.alb-sg"
     }
   )
 }
@@ -113,7 +113,7 @@ resource "aws_security_group" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-wordpress-sg"
+      Name = "aws-esempio15.wordpress-sg"
     }
   )
 }
@@ -142,7 +142,7 @@ resource "aws_security_group" "bastion" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-bastion-sg"
+      Name = "aws-esempio15.bastion-sg"
     }
   )
 }
@@ -171,7 +171,7 @@ resource "aws_security_group" "efs" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-efs-sg"
+      Name = "aws-esempio15.efs-sg"
     }
   )
 }
@@ -200,7 +200,7 @@ resource "aws_security_group" "rds" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-rds-sg"
+      Name = "aws-esempio15.rds-sg"
     }
   )
 }
@@ -212,7 +212,7 @@ resource "aws_efs_file_system" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-efs"
+      Name = "aws-esempio15.efs"
     }
   )
 }
@@ -232,7 +232,7 @@ resource "aws_db_subnet_group" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-db-subnet-group"
+      Name = "aws-esempio15.db-subnet-group"
     }
   )
 }
@@ -261,7 +261,7 @@ resource "aws_db_instance" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-db"
+      Name = "aws-esempio15.db"
     }
   )
 }
@@ -276,7 +276,7 @@ resource "aws_lb" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-alb"
+      Name = "aws-esempio15.alb"
     }
   )
 }
@@ -301,7 +301,7 @@ resource "aws_lb_target_group" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-tg"
+      Name = "aws-esempio15.tg"
     }
   )
 }
@@ -403,7 +403,7 @@ resource "aws_launch_template" "wordpress" {
     tags = merge(
       local.common_tags,
       {
-        Name = "${var.project_name}-asg-instance"
+        Name = "aws-esempio15.asg-instance"
       }
     )
   }
@@ -411,7 +411,7 @@ resource "aws_launch_template" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-launch-template"
+      Name = "aws-esempio15.launch-template"
     }
   )
 
@@ -444,13 +444,31 @@ resource "aws_autoscaling_group" "wordpress" {
 
   tag {
     key                 = "Project"
-    value               = var.project_name
+    value               = lookup(var.tags, "Project", "Development.aws.terraform15-WordpressScaling")
     propagate_at_launch = true
   }
 
   tag {
     key                 = "Environment"
     value               = lookup(var.tags, "Environment", "Dev")
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Owner"
+    value               = lookup(var.tags, "Owner", "AlNao")
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "CostCenter"
+    value               = lookup(var.tags, "CostCenter", "dev")
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "ManagedBy"
+    value               = lookup(var.tags, "ManagedBy", "Terraform")
     propagate_at_launch = true
   }
 
@@ -461,33 +479,158 @@ resource "aws_autoscaling_group" "wordpress" {
   ]
 }
 
-resource "aws_autoscaling_policy" "cpu_target" {
-  name                   = "${var.project_name}-cpu-target"
+resource "aws_autoscaling_policy" "cpu_scale_out" {
+  name                   = "${var.project_name}-cpu-scale-out"
   autoscaling_group_name = aws_autoscaling_group.wordpress.name
-  policy_type            = "TargetTrackingScaling"
+  policy_type            = "StepScaling"
+  adjustment_type        = "ChangeInCapacity"
 
-  target_tracking_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ASGAverageCPUUtilization"
-    }
-
-    target_value = var.cpu_target_value
+  step_adjustment {
+    scaling_adjustment          = 1
+    metric_interval_lower_bound = 0
   }
 }
 
-resource "aws_autoscaling_policy" "alb_requests_target" {
-  name                   = "${var.project_name}-alb-requests-target"
+resource "aws_autoscaling_policy" "cpu_scale_in" {
+  name                   = "${var.project_name}-cpu-scale-in"
   autoscaling_group_name = aws_autoscaling_group.wordpress.name
-  policy_type            = "TargetTrackingScaling"
+  policy_type            = "StepScaling"
+  adjustment_type        = "ChangeInCapacity"
 
-  target_tracking_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ALBRequestCountPerTarget"
-      resource_label         = "${aws_lb.wordpress.arn_suffix}/${aws_lb_target_group.wordpress.arn_suffix}"
-    }
-
-    target_value = var.alb_request_target_value
+  step_adjustment {
+    scaling_adjustment          = -1
+    metric_interval_upper_bound = 0
   }
+}
+
+resource "aws_cloudwatch_metric_alarm" "asg_cpu_high" {
+  alarm_name          = "${var.project_name}-asg-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.cpu_target_value
+  alarm_description   = "Scale out when the ASG average CPU exceeds ${var.cpu_target_value}%"
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.wordpress.name
+  }
+
+  alarm_actions = [aws_autoscaling_policy.cpu_scale_out.arn]
+  ok_actions    = [aws_autoscaling_policy.cpu_scale_in.arn]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.project_name}-asg-cpu-high"
+    }
+  )
+}
+
+resource "aws_cloudwatch_metric_alarm" "asg_cpu_low" {
+  alarm_name          = "${var.project_name}-asg-cpu-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.cpu_target_value - 15
+  alarm_description   = "Scale in when the ASG average CPU drops below ${var.cpu_target_value - 15}%"
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.wordpress.name
+  }
+
+  alarm_actions = [aws_autoscaling_policy.cpu_scale_in.arn]
+  ok_actions    = [aws_autoscaling_policy.cpu_scale_in.arn]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.project_name}-asg-cpu-low"
+    }
+  )
+}
+
+resource "aws_autoscaling_policy" "alb_requests_scale_out" {
+  name                   = "${var.project_name}-alb-requests-scale-out"
+  autoscaling_group_name = aws_autoscaling_group.wordpress.name
+  policy_type            = "StepScaling"
+  adjustment_type        = "ChangeInCapacity"
+
+  step_adjustment {
+    scaling_adjustment          = 1
+    metric_interval_lower_bound = 0
+  }
+}
+
+resource "aws_autoscaling_policy" "alb_requests_scale_in" {
+  name                   = "${var.project_name}-alb-requests-scale-in"
+  autoscaling_group_name = aws_autoscaling_group.wordpress.name
+  policy_type            = "StepScaling"
+  adjustment_type        = "ChangeInCapacity"
+
+  step_adjustment {
+    scaling_adjustment          = -1
+    metric_interval_upper_bound = 0
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "asg_alb_requests_high" {
+  alarm_name          = "${var.project_name}-asg-alb-requests-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Average"
+  threshold           = var.alb_request_target_value
+  alarm_description   = "Scale out when ALB requests per target exceeds ${var.alb_request_target_value}"
+
+  dimensions = {
+    LoadBalancer = aws_lb.wordpress.arn_suffix
+    TargetGroup  = aws_lb_target_group.wordpress.arn_suffix
+  }
+
+  alarm_actions = [aws_autoscaling_policy.alb_requests_scale_out.arn]
+  ok_actions    = [aws_autoscaling_policy.alb_requests_scale_in.arn]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.project_name}-asg-alb-requests-high"
+    }
+  )
+}
+
+resource "aws_cloudwatch_metric_alarm" "asg_alb_requests_low" {
+  alarm_name          = "${var.project_name}-asg-alb-requests-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Average"
+  threshold           = max(var.alb_request_target_value - 100, 0)
+  alarm_description   = "Scale in when ALB requests per target drops below ${max(var.alb_request_target_value - 100, 0)}"
+
+  dimensions = {
+    LoadBalancer = aws_lb.wordpress.arn_suffix
+    TargetGroup  = aws_lb_target_group.wordpress.arn_suffix
+  }
+
+  alarm_actions = [aws_autoscaling_policy.alb_requests_scale_in.arn]
+  ok_actions    = [aws_autoscaling_policy.alb_requests_scale_in.arn]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.project_name}-asg-alb-requests-low"
+    }
+  )
 }
 
 resource "aws_instance" "bastion" {
@@ -537,7 +680,7 @@ resource "aws_instance" "bastion" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-bastion"
+      Name = "aws-esempio15.bastion"
     }
   )
 
@@ -554,7 +697,7 @@ resource "aws_eip" "bastion" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-bastion-eip"
+      Name = "aws-esempio15.bastion-eip"
     }
   )
 }
@@ -577,7 +720,7 @@ resource "aws_iam_role" "lambda_scaling" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-lambda-scaling-role"
+      Name = "aws-esempio15.lambda-scaling-role"
     }
   )
 }
@@ -649,19 +792,19 @@ resource "aws_lambda_function" "scale_up" {
 
   environment {
     variables = {
-      ASG_NAME          = aws_autoscaling_group.wordpress.name
-      DEFAULT_DESIRED   = tostring(var.asg_desired_capacity)
-      TEMP_DESIRED      = tostring(var.temporary_desired_capacity)
-      DURATION_HOURS    = tostring(var.temporary_duration_hours)
-      PARAMETER_NAME    = local.scaling_expiration_parameter
-      MAX_CAPACITY      = tostring(var.asg_max_size)
+      ASG_NAME        = aws_autoscaling_group.wordpress.name
+      DEFAULT_DESIRED = tostring(var.asg_desired_capacity)
+      TEMP_DESIRED    = tostring(var.temporary_desired_capacity)
+      DURATION_HOURS  = tostring(var.temporary_duration_hours)
+      PARAMETER_NAME  = local.scaling_expiration_parameter
+      MAX_CAPACITY    = tostring(var.asg_max_size)
     }
   }
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-scale-up"
+      Name = "aws-esempio15.scale-up"
     }
   )
 }
@@ -687,7 +830,7 @@ resource "aws_lambda_function" "scale_down" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-scale-down"
+      Name = "aws-esempio15.scale-down"
     }
   )
 }
@@ -700,7 +843,7 @@ resource "aws_cloudwatch_event_rule" "scale_down_checker" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-scale-down-checker"
+      Name = "aws-esempio15.scale-down-checker"
     }
   )
 }

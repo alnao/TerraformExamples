@@ -130,7 +130,7 @@ resource "aws_cloudfront_distribution" "website" {
 
       viewer_protocol_policy = "redirect-to-https"
       min_ttl                = 0
-      default_ttl            = 86400   # 1 giorno
+      default_ttl            = 86400    # 1 giorno
       max_ttl                = 31536000 # 1 anno
       compress               = true
     }

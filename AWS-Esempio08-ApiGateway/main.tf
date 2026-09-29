@@ -71,12 +71,12 @@ data "archive_file" "lambda_list_files_zip" {
 resource "aws_lambda_function" "list_files" {
   filename         = data.archive_file.lambda_list_files_zip.output_path
   function_name    = "${var.api_name}-list-files"
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_list_files.lambda_handler"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_list_files.lambda_handler"
   source_code_hash = data.archive_file.lambda_list_files_zip.output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 128
+  runtime          = "python3.11"
+  timeout          = 30
+  memory_size      = 128
 
   environment {
     variables = {
@@ -97,12 +97,12 @@ data "archive_file" "lambda_hypotenuse_zip" {
 resource "aws_lambda_function" "calculate_hypotenuse" {
   filename         = data.archive_file.lambda_hypotenuse_zip.output_path
   function_name    = "${var.api_name}-calculate-hypotenuse"
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_calculate_hypotenuse.lambda_handler"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_calculate_hypotenuse.lambda_handler"
   source_code_hash = data.archive_file.lambda_hypotenuse_zip.output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 128
+  runtime          = "python3.11"
+  timeout          = 30
+  memory_size      = 128
 
   tags = var.tags
 }
@@ -141,10 +141,10 @@ resource "aws_api_gateway_resource" "files" {
 
 # GET /files
 resource "aws_api_gateway_method" "get_files" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.files.id
-  http_method   = "GET"
-  authorization = var.authorization_type
+  rest_api_id      = aws_api_gateway_rest_api.main.id
+  resource_id      = aws_api_gateway_resource.files.id
+  http_method      = "GET"
+  authorization    = var.authorization_type
   api_key_required = var.api_key_required
 }
 
@@ -167,10 +167,10 @@ resource "aws_api_gateway_resource" "calculate" {
 
 # POST /calculate
 resource "aws_api_gateway_method" "post_calculate" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.calculate.id
-  http_method   = "POST"
-  authorization = var.authorization_type
+  rest_api_id      = aws_api_gateway_rest_api.main.id
+  resource_id      = aws_api_gateway_resource.calculate.id
+  http_method      = "POST"
+  authorization    = var.authorization_type
   api_key_required = var.api_key_required
 }
 

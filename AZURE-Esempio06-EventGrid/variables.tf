@@ -164,12 +164,14 @@ variable "action_group_id" {
 }
 
 variable "tags" {
-  description = "Tags risorse"
+  description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio06EventGrid"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio06.event-grid"
+    Environment = "dev"
+    Project     = "Development.azure.terraform06-EventGrid"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

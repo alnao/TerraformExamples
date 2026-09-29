@@ -16,7 +16,7 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      Project = var.project_name
+      Project = lookup(var.tags, "Project", "Development.aws.terraform14-WordpressEFS")
     }
   )
 }
@@ -79,7 +79,7 @@ resource "aws_security_group" "ec2" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-ec2-sg"
+      Name = "aws-esempio14.ec2-sg"
     }
   )
 }
@@ -108,7 +108,7 @@ resource "aws_security_group" "efs" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-efs-sg"
+      Name = "aws-esempio14.efs-sg"
     }
   )
 }
@@ -137,7 +137,7 @@ resource "aws_security_group" "rds" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-rds-sg"
+      Name = "aws-esempio14.rds-sg"
     }
   )
 }
@@ -149,7 +149,7 @@ resource "aws_efs_file_system" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-efs"
+      Name = "aws-esempio14.efs"
     }
   )
 }
@@ -167,7 +167,7 @@ resource "aws_db_subnet_group" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-db-subnet-group"
+      Name = "aws-esempio14.db-subnet-group"
     }
   )
 }
@@ -196,7 +196,7 @@ resource "aws_db_instance" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-db"
+      Name = "aws-esempio14.db"
     }
   )
 }
@@ -246,7 +246,7 @@ resource "aws_instance" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-ec2"
+      Name = "aws-esempio14.ec2"
     }
   )
 
@@ -263,7 +263,7 @@ resource "aws_eip" "wordpress" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-eip"
+      Name = "aws-esempio14.eip"
     }
   )
 }

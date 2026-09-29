@@ -18,8 +18,8 @@ variable "storage_account_name" {
   validation {
     condition     = can(regex("^[a-z0-9]{3,24}$", var.storage_account_name))
     error_message = "Il nome dello storage account deve essere lungo 3-24 caratteri e contenere solo lettere minuscole e numeri."
-  } 
-  default    = "alnaoterraformesempio01"
+  }
+  default = "alnaoterraformesempio01"
 }
 
 variable "account_tier" {
@@ -179,9 +179,11 @@ variable "tags" {
   description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
+    Name        = "azure-esempio01.storage"
     Environment = "dev"
-    Project     = "terraform-examples"
-    Owner       = "alnao"
-    Purpose     = "storage-example"
+    Project     = "Development.azure.terraform01-Storage"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -36,7 +36,7 @@ output "rds_secret_arn" {
 
 output "api_gateway_url" {
   description = "URL base dell'API Gateway"
-  value       = "${aws_api_gateway_stage.main.invoke_url}"
+  value       = aws_api_gateway_stage.main.invoke_url
 }
 
 output "api_endpoints" {
@@ -45,7 +45,7 @@ output "api_endpoints" {
     presigned_url = "${aws_api_gateway_stage.main.invoke_url}/presigned-url"
     extract_zip   = "${aws_api_gateway_stage.main.invoke_url}/extract-zip"
     excel_to_csv  = "${aws_api_gateway_stage.main.invoke_url}/excel-to-csv"
-    upload_to_rds  = "${aws_api_gateway_stage.main.invoke_url}/upload-to-rds"
+    upload_to_rds = "${aws_api_gateway_stage.main.invoke_url}/upload-to-rds"
     read_from_rds = "${aws_api_gateway_stage.main.invoke_url}/read-from-rds"
     sftp_send     = "${aws_api_gateway_stage.main.invoke_url}/sftp-send"
     list_files    = "${aws_api_gateway_stage.main.invoke_url}/files"
@@ -59,7 +59,7 @@ output "lambda_functions" {
     presigned_url = aws_lambda_function.presigned_url.function_name
     extract_zip   = aws_lambda_function.extract_zip.function_name
     excel_to_csv  = aws_lambda_function.excel_to_csv.function_name
-    upload_to_rds  = aws_lambda_function.upload_to_rds.function_name
+    upload_to_rds = aws_lambda_function.upload_to_rds.function_name
     read_from_rds = aws_lambda_function.read_from_rds.function_name
     sftp_send     = aws_lambda_function.sftp_send.function_name
     s3_scan       = aws_lambda_function.s3_scan.function_name
@@ -85,7 +85,7 @@ output "project_tags" {
 
 output "instructions" {
   description = "Istruzioni per il setup iniziale"
-  value = <<-EOT
+  value       = <<-EOT
     
     ========================================
     Setup Iniziale - Esempio 11
@@ -101,7 +101,13 @@ output "instructions" {
          --name "${var.sftp_private_key_ssm_parameter}" \
          --value "file://sftp_key" \
          --type "SecureString" \
-         --region ${var.region}
+         --region ${var.region} \
+         --tags "Key=Name,Value=aws-esempio11.sftp-private-key" \
+                "Key=Environment,Value=dev" \
+                "Key=Project,Value=Development.aws.terraform11-LambdaApplicationS3Utils" \
+                "Key=Owner,Value=AlNao" \
+                "Key=CostCenter,Value=dev" \
+                "Key=ManagedBy,Value=Terraform"
     
     2. Test API Gateway:
        

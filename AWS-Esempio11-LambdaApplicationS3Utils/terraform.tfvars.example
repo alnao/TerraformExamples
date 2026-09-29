@@ -55,12 +55,12 @@ api_5xx_threshold           = 5
 alarm_email                 = "your-email@example.com"  # Lascia vuoto per non creare SNS topic
 
 # Tags
-tags = {
-  Environment = "dev"
-  Owner       = "alnao"
-  Example     = "Esempio11LambdaApplicationS3Utils"
-  CreatedBy   = "Terraform"
-}
+# tags = {
+#   Environment = "dev"
+#   Owner       = "alnao"
+#   Example     = "Esempio11LambdaApplicationS3Utils"
+#   CreatedBy   = "Terraform"
+# }
 
 # Additional custom tags
 additional_tags = {

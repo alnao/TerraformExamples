@@ -258,9 +258,11 @@ variable "tags" {
   description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio09CosmosMongo"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio09.cosmos-mongo"
+    Environment = "dev"
+    Project     = "Development.azure.terraform09-CosmosMongo"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

@@ -19,7 +19,7 @@ variable "storage_account_name" {
     condition     = can(regex("^[a-z0-9]{3,24}$", var.storage_account_name))
     error_message = "Il nome deve essere lungo 3-24 caratteri e contenere solo lettere minuscole e numeri."
   }
-  default     = "alnaoterraformes03web"
+  default = "alnaoterraformes03web"
 }
 
 variable "account_tier" {
@@ -252,9 +252,11 @@ variable "tags" {
   description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio03WebsiteBlob"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio03.website-blob"
+    Environment = "dev"
+    Project     = "Development.azure.terraform03-WebsiteBlob"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

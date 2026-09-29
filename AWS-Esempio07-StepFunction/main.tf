@@ -68,7 +68,7 @@ resource "aws_iam_role_policy" "step_functions_policy" {
         ]
       },
       {
-        Effect = "Allow"
+        Effect   = "Allow"
         Action   = "lambda:InvokeFunction"
         Resource = aws_lambda_function.logger.arn
       },
@@ -126,13 +126,13 @@ data "archive_file" "lambda_logger_zip" {
 resource "aws_lambda_function" "logger" {
   filename         = data.archive_file.lambda_logger_zip.output_path
   function_name    = var.logger_function_name
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
   source_code_hash = data.archive_file.lambda_logger_zip.output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 128
-  tags            = var.tags
+  runtime          = "python3.11"
+  timeout          = 30
+  memory_size      = 128
+  tags             = var.tags
 }
 
 # CloudWatch Log Group per Lambda

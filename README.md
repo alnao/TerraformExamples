@@ -51,6 +51,30 @@ Ogni esempio è contenuto in una cartella specifica e include:
         
       
 
+## Tag standard applicati alle risorse
+
+Tutti gli esempi AWS e Azure usano un set comune di tag per uniformare la governance delle risorse e semplificare la fatturazione, la ricerca e il monitoring.
+
+Tag applicati:
+- `Name`: nome univoco della risorsa nel formato `aws-esempioXX.yy` o `azure-esempioXX.yy`
+- `Environment`: `dev`
+- `Project`: `Development.aws.terraformXX-YY` o `Development.azure.terraformXX-YY`
+- `Owner`: `AlNao`
+- `CostCenter`: `dev`
+- `ManagedBy`: `Terraform`
+
+Esempio di mapping:
+```hcl
+Name        = "aws-esempio02.ec2"
+Environment = "dev"
+Project     = "Development.aws.terraform02-IstanzaEC2"
+Owner       = "AlNao"
+CostCenter  = "dev"
+ManagedBy   = "Terraform"
+```
+
+Questo pattern viene usato in tutti i file `variables.tf` degli esempi cloud e viene mantenuto anche nelle risorse create con `merge(...)` o `tags = ...`.
+
 ## Elenco degli esempi
 
 ⚠️ **Nota importante**: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️

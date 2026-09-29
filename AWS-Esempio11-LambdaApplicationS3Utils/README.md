@@ -97,7 +97,13 @@ aws ssm put-parameter \
   --name "/alnao/dev/terraform/esempio-11/sftp/private-key" \
   --value file://~/.aws/sftp_key \
   --type "SecureString" \
-  --region $AWS_REGION
+  --region "$AWS_REGION" \
+  --tags "Key=Name,Value=aws-esempio11.sftp-private-key" \
+         "Key=Environment,Value=dev" \
+         "Key=Project,Value=Development.aws.terraform11-LambdaApplicationS3Utils" \
+         "Key=Owner,Value=AlNao" \
+         "Key=CostCenter,Value=dev" \
+         "Key=ManagedBy,Value=Terraform"
 ```
 
 > La chiave deve iniziare con `-----BEGIN RSA PRIVATE KEY-----`. Vedi [SFTP_SETUP.md](SFTP_SETUP.md) per dettagli e troubleshooting.

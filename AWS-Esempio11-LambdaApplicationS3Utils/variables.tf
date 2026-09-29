@@ -200,16 +200,17 @@ variable "alarm_email" {
 
 # Tags
 variable "tags" {
-  description = "Tags da applicare a tutte le risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
+    Name        = "aws-esempio11.lambda-app-s3-utils"
     Environment = "dev"
-    Owner       = "alnao"
-    Example     = "Esempio11LambdaApplicationS3Utils"
-    CreatedBy   = "Terraform"
+    Project     = "Development.aws.terraform11-LambdaApplicationS3Utils"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }
-
 variable "additional_tags" {
   description = "Tags aggiuntivi specifici del progetto"
   type        = map(string)

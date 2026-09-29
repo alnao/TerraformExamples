@@ -50,7 +50,7 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/aws-ec2-key -N ""
     echo $KEY
 
     # Con chiave esistente
-    terraform plan -var="existing_key_name=$KEY"
+    terraform plan -var="existing_key_name=$KEY" 
 
     # Oppure creando una nuova chiave
     terraform plan -var="create_key_pair=true" -var="public_key=$(cat ~/.ssh/aws-ec2-key.pub)"
@@ -65,15 +65,19 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/aws-ec2-key -N ""
     ```
 - Esempio con user data (installazione web server)
     ```bash
-    terraform apply  -var="existing_key_name=$KEY" -var="user_data=$(cat <<'EOF'
-    #!/bin/bash
-    yum update -y
-    yum install -y httpd
-    systemctl start httpd
-    systemctl enable httpd
-    echo "<h1>Hello from EC2 Instance from terraformexamples/AWS-Esempio02-IstanzaEc2</h1>" > /var/www/html/index.html
+    cat > /tmp/aws-ec2-userdata.sh <<'EOF'
+        #!/bin/bash
+        dnf update -y
+        dnf install -y httpd
+        systemctl enable --now httpd
+        echo "<h1>Hello from EC2 Instance from terraformexamples/AWS-Esempio02-IstanzaEc2</h1> con tag" > /var/www/html/index.html
     EOF
-    )"
+
+    USER_DATA=$(cat /tmp/aws-ec2-userdata.sh)
+
+    terraform apply \
+    -var="existing_key_name=$KEY" \
+    -var="user_data=${USER_DATA}"
     ```
 - Connessione all'istanza
     ```bash

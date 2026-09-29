@@ -181,9 +181,11 @@ variable "tags" {
   description = "Tag da applicare alle risorse"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio02IstanzeVM"
-    CreatedBy   = "Terraform"
+    Name        = "azure-esempio02.istanze-vm"
+    Environment = "dev"
+    Project     = "Development.azure.terraform02-IstanzeVM"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

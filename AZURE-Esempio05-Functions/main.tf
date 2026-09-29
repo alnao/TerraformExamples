@@ -117,16 +117,16 @@ resource "azurerm_linux_function_app" "main" {
 
   app_settings = merge(
     {
-      FUNCTIONS_WORKER_RUNTIME            = "python"
-      FUNCTIONS_EXTENSION_VERSION         = "~4"
-      AzureWebJobsFeatureFlags            = "EnableWorkerIndexing"
-      PYTHON_ISOLATE_WORKER_DEPENDENCIES  = "1"
-      SCM_DO_BUILD_DURING_DEPLOYMENT      = "true"
-      ENABLE_ORYX_BUILD                   = "true"
-      TEST_STORAGE_ACCOUNT_NAME           = azurerm_storage_account.test.name
-      TEST_STORAGE_ACCOUNT_KEY            = azurerm_storage_account.test.primary_access_key
-      TEST_STORAGE_CONNECTION_STRING      = azurerm_storage_account.test.primary_connection_string
-      TEST_CONTAINER_NAME                 = azurerm_storage_container.test.name
+      FUNCTIONS_WORKER_RUNTIME           = "python"
+      FUNCTIONS_EXTENSION_VERSION        = "~4"
+      AzureWebJobsFeatureFlags           = "EnableWorkerIndexing"
+      PYTHON_ISOLATE_WORKER_DEPENDENCIES = "1"
+      SCM_DO_BUILD_DURING_DEPLOYMENT     = "true"
+      ENABLE_ORYX_BUILD                  = "true"
+      TEST_STORAGE_ACCOUNT_NAME          = azurerm_storage_account.test.name
+      TEST_STORAGE_ACCOUNT_KEY           = azurerm_storage_account.test.primary_access_key
+      TEST_STORAGE_CONNECTION_STRING     = azurerm_storage_account.test.primary_connection_string
+      TEST_CONTAINER_NAME                = azurerm_storage_container.test.name
     },
     var.app_settings
   )
@@ -168,16 +168,16 @@ resource "azurerm_windows_function_app" "main" {
 
   app_settings = merge(
     {
-      FUNCTIONS_WORKER_RUNTIME            = "python"
-      FUNCTIONS_EXTENSION_VERSION         = "~4"
-      AzureWebJobsFeatureFlags            = "EnableWorkerIndexing"
-      PYTHON_ISOLATE_WORKER_DEPENDENCIES  = "1"
-      SCM_DO_BUILD_DURING_DEPLOYMENT      = "true"
-      ENABLE_ORYX_BUILD                   = "true"
-      TEST_STORAGE_ACCOUNT_NAME           = azurerm_storage_account.test.name
-      TEST_STORAGE_ACCOUNT_KEY            = azurerm_storage_account.test.primary_access_key
-      TEST_STORAGE_CONNECTION_STRING      = azurerm_storage_account.test.primary_connection_string
-      TEST_CONTAINER_NAME                 = azurerm_storage_container.test.name
+      FUNCTIONS_WORKER_RUNTIME           = "python"
+      FUNCTIONS_EXTENSION_VERSION        = "~4"
+      AzureWebJobsFeatureFlags           = "EnableWorkerIndexing"
+      PYTHON_ISOLATE_WORKER_DEPENDENCIES = "1"
+      SCM_DO_BUILD_DURING_DEPLOYMENT     = "true"
+      ENABLE_ORYX_BUILD                  = "true"
+      TEST_STORAGE_ACCOUNT_NAME          = azurerm_storage_account.test.name
+      TEST_STORAGE_ACCOUNT_KEY           = azurerm_storage_account.test.primary_access_key
+      TEST_STORAGE_CONNECTION_STRING     = azurerm_storage_account.test.primary_connection_string
+      TEST_CONTAINER_NAME                = azurerm_storage_container.test.name
     },
     var.app_settings
   )

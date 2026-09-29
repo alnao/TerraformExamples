@@ -92,7 +92,7 @@ module "ec2_instance" {
   monitoring             = var.enable_detailed_monitoring
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   subnet_id              = var.subnet_id != "" ? var.subnet_id : null
-  
+
   # User data
   user_data_base64            = var.user_data != "" ? base64encode(var.user_data) : null
   user_data_replace_on_change = true
@@ -113,7 +113,7 @@ module "ec2_instance" {
   # Metadata options
   metadata_options = {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"  # IMDSv2
+    http_tokens                 = "required" # IMDSv2
     http_put_response_hop_limit = 1
     instance_metadata_tags      = "enabled"
   }

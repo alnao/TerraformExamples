@@ -288,8 +288,8 @@ resource "azurerm_logic_app_action_custom" "get_blob_content" {
       method = "get"
       path   = "/v2/datasets/@{encodeURIComponent(encodeURIComponent('${azurerm_storage_account.source.name}'))}/GetFileContentByPath"
       queries = {
-        path            = "@triggerBody()?['Path']"
-        inferContentType = true
+        path                         = "@triggerBody()?['Path']"
+        inferContentType             = true
         queryParametersSingleEncoded = true
       }
     }

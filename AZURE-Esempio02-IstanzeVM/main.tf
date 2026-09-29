@@ -175,10 +175,10 @@ resource "azurerm_storage_account" "boot_diagnostics" {
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  
+
   # Necessario per boot diagnostics
   min_tls_version = "TLS1_2"
-  
+
   tags = var.tags
 }
 

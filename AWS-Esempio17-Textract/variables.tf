@@ -269,12 +269,14 @@ variable "log_retention_days" {
 }
 
 variable "tags" {
-  description = "Tag applicati a tutte le risorse"
+  description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Dev"
-    Owner       = "alnao"
-    Example     = "Esempio17Textract"
-    CreatedBy   = "Terraform"
+    Name        = "aws-esempio17.textract"
+    Environment = "dev"
+    Project     = "Development.aws.terraform17-Textract"
+    Owner       = "AlNao"
+    CostCenter  = "dev"
+    ManagedBy   = "Terraform"
   }
 }

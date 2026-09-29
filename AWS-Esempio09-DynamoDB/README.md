@@ -255,7 +255,7 @@ Questo esempio mostra come creare e gestire una tabella Amazon DynamoDB con Terr
 - Export to S3
   ```bash
   # Export tabella completa a S3
-  BUCKET_NAME="my-dynamodb-exports"
+  BUCKET_NAME="alnao-dev-terraform"
   aws dynamodb export-table-to-point-in-time \
     --table-arn $(terraform output -raw table_arn) \
     --s3-bucket $BUCKET_NAME \

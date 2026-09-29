@@ -73,7 +73,7 @@ resource "aws_security_group" "web" {
     description = "Allow all outbound traffic"
   }
 
-  tags = merge(local.common_tags, { Name = "${var.project_name}-sg" })
+  tags = merge(local.common_tags, { Name = "aws-esempio18.sg" })
 }
 
 # ====================================
@@ -115,5 +115,5 @@ resource "aws_instance" "web" {
     http_tokens = "required"
   }
 
-  tags = merge(local.common_tags, { Name = "${var.project_name}-web" })
+  tags = merge(local.common_tags, { Name = "aws-esempio18.web" })
 }

@@ -34,7 +34,7 @@ resource "aws_s3_bucket_website_configuration" "website" {
     for_each = var.routing_rules
     content {
       condition {
-        key_prefix_equals = lookup(routing_rule.value.condition, "key_prefix_equals", null)
+        key_prefix_equals               = lookup(routing_rule.value.condition, "key_prefix_equals", null)
         http_error_code_returned_equals = lookup(routing_rule.value.condition, "http_error_code_returned_equals", null)
       }
       redirect {
@@ -60,7 +60,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
 
 # Policy per accesso pubblico
 resource "aws_s3_bucket_policy" "website" {
-  bucket = aws_s3_bucket.website.id
+  bucket     = aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
 
   policy = jsonencode({

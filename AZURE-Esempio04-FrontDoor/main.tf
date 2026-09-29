@@ -111,7 +111,7 @@ resource "azurerm_cdn_frontdoor_route" "main" {
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.main.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.main.id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.main.id]
-  
+
   supported_protocols    = var.supported_protocols
   patterns_to_match      = ["/*"]
   forwarding_protocol    = "MatchRequest"
@@ -120,30 +120,30 @@ resource "azurerm_cdn_frontdoor_route" "main" {
 
   # Cache configuration
   cdn_frontdoor_rule_set_ids = var.enable_caching ? [azurerm_cdn_frontdoor_rule_set.caching[0].id] : []
-  
+
   depends_on = [azurerm_cdn_frontdoor_origin.main]
 }
 
 # Rule Set per caching (opzionale)
 resource "azurerm_cdn_frontdoor_rule_set" "caching" {
-  count                        = var.enable_caching ? 1 : 0
-  name                         = "CachingRules"
-  cdn_frontdoor_profile_id     = azurerm_cdn_frontdoor_profile.main.id
+  count                    = var.enable_caching ? 1 : 0
+  name                     = "CachingRules"
+  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
 }
 
 # Rule per file statici (Gruppo 1 - Code/Fonts)
 resource "azurerm_cdn_frontdoor_rule" "static_files_1" {
-  count                         = var.enable_caching ? 1 : 0
-  name                          = "StaticFilesCaching1"
-  cdn_frontdoor_rule_set_id     = azurerm_cdn_frontdoor_rule_set.caching[0].id
-  order                         = 1
-  behavior_on_match             = "Continue"
+  count                     = var.enable_caching ? 1 : 0
+  name                      = "StaticFilesCaching1"
+  cdn_frontdoor_rule_set_id = azurerm_cdn_frontdoor_rule_set.caching[0].id
+  order                     = 1
+  behavior_on_match         = "Continue"
 
   conditions {
     url_file_extension_condition {
-      operator         = "Equal"
-      match_values     = ["css", "js", "woff", "woff2", "ttf", "eot"]
-      transforms       = ["Lowercase"]
+      operator     = "Equal"
+      match_values = ["css", "js", "woff", "woff2", "ttf", "eot"]
+      transforms   = ["Lowercase"]
     }
   }
 
@@ -159,17 +159,17 @@ resource "azurerm_cdn_frontdoor_rule" "static_files_1" {
 
 # Rule per file statici (Gruppo 2 - Images)
 resource "azurerm_cdn_frontdoor_rule" "static_files_2" {
-  count                         = var.enable_caching ? 1 : 0
-  name                          = "StaticFilesCaching2"
-  cdn_frontdoor_rule_set_id     = azurerm_cdn_frontdoor_rule_set.caching[0].id
-  order                         = 2
-  behavior_on_match             = "Continue"
+  count                     = var.enable_caching ? 1 : 0
+  name                      = "StaticFilesCaching2"
+  cdn_frontdoor_rule_set_id = azurerm_cdn_frontdoor_rule_set.caching[0].id
+  order                     = 2
+  behavior_on_match         = "Continue"
 
   conditions {
     url_file_extension_condition {
-      operator         = "Equal"
-      match_values     = ["jpg", "jpeg", "png", "gif", "svg", "ico"]
-      transforms       = ["Lowercase"]
+      operator     = "Equal"
+      match_values = ["jpg", "jpeg", "png", "gif", "svg", "ico"]
+      transforms   = ["Lowercase"]
     }
   }
 

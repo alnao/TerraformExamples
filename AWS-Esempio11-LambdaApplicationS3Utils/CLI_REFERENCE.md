@@ -12,10 +12,16 @@ ssh-keygen -t rsa -b 2048 -m PEM -f sftp_key -N ""
 
 # Carica chiave privata in SSM Parameter Store
 aws ssm put-parameter \
-  --name "/esempio-11/sftp/private-key" \
+  --name "/alnao/dev/terraform/esempio-11/sftp/private-key" \
   --value file://sftp_key \
   --type "SecureString" \
-  --region eu-central-1
+  --region eu-central-1 \
+  --tags "Key=Name,Value=aws-esempio11.sftp-private-key" \
+         "Key=Environment,Value=dev" \
+         "Key=Project,Value=Development.aws.terraform11-LambdaApplicationS3Utils" \
+         "Key=Owner,Value=AlNao" \
+         "Key=CostCenter,Value=dev" \
+         "Key=ManagedBy,Value=Terraform"
 
 # Crea Lambda Layer per openpyxl
 mkdir -p python && pip install openpyxl -t python/

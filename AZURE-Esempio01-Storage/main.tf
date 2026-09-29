@@ -38,8 +38,8 @@ resource "azurerm_storage_account" "main" {
 
   # Configurazione di accesso blob
   blob_properties {
-    versioning_enabled = var.enable_versioning
-    change_feed_enabled = var.enable_change_feed
+    versioning_enabled            = var.enable_versioning
+    change_feed_enabled           = var.enable_change_feed
     change_feed_retention_in_days = var.enable_change_feed ? var.change_feed_retention_days : null
 
     dynamic "delete_retention_policy" {
@@ -64,7 +64,7 @@ resource "azurerm_storage_account" "main" {
 resource "azurerm_storage_container" "main" {
   count                 = length(var.containers)
   name                  = var.containers[count.index].name
-  storage_account_name  = azurerm_storage_account.main.name 
+  storage_account_name  = azurerm_storage_account.main.name
   container_access_type = var.containers[count.index].access_type
 }
 
