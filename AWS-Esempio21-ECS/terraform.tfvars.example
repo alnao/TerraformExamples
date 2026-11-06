@@ -1,0 +1,40 @@
+region       = "eu-central-1"
+project_name = "alnao-dev-terraform-esempio21"
+
+# Immagine: repository ECR creato dall'esempio 20 (va eseguito prima)
+ecr_repository_name = "alnao-dev-terraform-esempio20-pathsgames"
+
+# Vuoto/commentato = immagine piu' recente del repository (l'ultima versione copiata
+# dall'esempio 20); indicare un tag solo per fissare una versione precisa
+# image_tag = "1.12.0"
+
+# In alternativa, senza esempio 20, l'immagine direttamente da Docker Hub
+# container_image = "pathsgames/pathsgames:1.12.0"
+
+# Dimensione del task (condivisa da pathsgames e postgres)
+task_cpu    = 1024
+task_memory = 2048
+
+# 0 = servizio spento ma non distrutto (ALB e cluster restano)
+desired_count = 1
+
+# Opzioni
+enable_container_insights = false
+enable_execute_command    = false
+
+# Chi puo' chiamare l'ALB (meglio il proprio IP: "x.x.x.x/32")
+http_cidr_blocks = ["0.0.0.0/0"]
+
+# Rete: se lasciati vuoti si usano la VPC di default e tutte le sue subnet
+# vpc_id     = "vpc-xxxxxxxx"
+# subnet_ids = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+
+# Tags
+# tags = {
+#   Name        = "aws-esempio21.ecs"
+#   Environment = "dev"
+#   Project     = "Development.aws.terraform21-ECS"
+#   Owner       = "AlNao"
+#   CostCenter  = "dev"
+#   ManagedBy   = "Terraform"
+# }

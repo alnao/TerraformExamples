@@ -56,14 +56,16 @@ alarm_email                 = "your-email@example.com"  # Lascia vuoto per non c
 
 # Tags
 # tags = {
-#   Environment = "dev"
-#   Owner       = "alnao"
-#   Example     = "Esempio11LambdaApplicationS3Utils"
-#   CreatedBy   = "Terraform"
+#  Environment = "dev"
+#  Owner       = "alnao"
+#  Example     = "Esempio11LambdaApplicationS3Utils"
+#  CostCenter  = "dev"
+#  ManagedBy   = "Terraform"
+#  Project     = "Development"
 # }
 
 # Additional custom tags
 additional_tags = {
-  CostCenter = "Engineering"
+
   Team       = "Backend"
 }
